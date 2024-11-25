@@ -1,0 +1,397 @@
+\documentclass{beamer}
+\title{Normalization for the simply typed \texorpdfstring{$\lambda$}{lambda}-calculus \\ \large A trilogy}
+\author{Bálint Kocsis}
+\institute{Radboud University}
+\date{\today}
+
+\usetheme{Boadilla}
+
+\input{preamble}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}{My thesis}
+\begin{itemize}
+    \item Present 3 normalization proofs
+    \begin{itemize}
+        \item Tait's method
+        \item Normalization by evaluation (NbE)
+        \item Categorical gluing
+    \end{itemize}
+    \item Compare the structure of the proofs
+\end{itemize}
+\end{frame}
+
+\begin{frame}{This talk}
+\begin{itemize}
+    \item Quick intro to STLC
+    \item Normalization
+    \item Compare the main steps of Tait's method and NbE
+    \item Touch on the categorical proof
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Setting: simply typed \texorpdfstring{$\lambda$}{lambda}-calculus}
+Types:
+    \[ \sigma, \tau := \beta \sep \functy{\sigma}{\tau} \]
+\begin{figure}
+\begin{mathpar}
+\inferrule[var]
+    {x \in \Var[\sigma]}
+    {\typedtm{x}{\sigma}}
+\and
+\inferrule[app]
+    {\typedtm{t}{\functy{\sigma}{\tau}} \and \typedtm{u}{\sigma}}
+    {\typedtm{\app{t}{u}}{\tau}}
+\and
+\inferrule[lam]
+    {x \in \Var[\sigma] \and \typedtm{t}{\tau}}
+    {\typedtm{\lamv{x}{\sigma}{t}}{\functy{\sigma}{\tau}}}
+\end{mathpar}
+\end{figure}
+$\Tm[\sigma] = \setof{t}{\typedtm{t}{\sigma}}$
+\end{frame}
+
+\begin{frame}{Conversion}
+\begin{figure}
+\begin{mathpar}
+\inferrule[beta]
+    {\typedtm{t}{\tau} \and \typedtm{u}{\sigma}}
+    {\conv{\app{(\lamv{x}{\sigma}{t})}{u}}{\subst{t}{\singsubv{x}{u}}}{\tau}}
+\\
+\inferrule[eta]
+    {\typedtm{t}{\functy{\sigma}{\tau}}}
+    {\conv{\lamv{x}{\sigma}{\app{t}{x}}}{t}{\functy{\sigma}{\tau}}}
+\quad(x \notin \FV{t})
+\end{mathpar}
+\end{figure}
+\end{frame}
+
+%TODO philosophically: two functions should be the same if the behave they same way, i.e. give the same output for the same input
+\begin{frame}{Extensionality}
+The rule
+\begin{mathpar}
+\inferrule[eta]
+    {\typedtm{t}{\functy{\sigma}{\tau}}}
+    {\conv{\lamv{x}{\sigma}{\app{t}{x}}}{t}{\functy{\sigma}{\tau}}}
+\quad(x \notin \FV{t})
+\end{mathpar}
+is equivalent to extensionality:
+\begin{mathpar}
+\inferrule[ext]
+    {\conv{\app{t}{x}}{\app{t'}{x}}{\tau}}
+    {\conv{t}{t'}{\functy{\sigma}{\tau}}}
+\quad(x \notin \FV{t} \cup \FV{t'})
+\end{mathpar}
+\end{frame}
+
+\begin{frame}{Traditional approach to normalization: term rewriting}
+\begin{figure}
+\begin{mathpar}
+\inferrule[beta]{}
+    {\app{(\lamv{x}{\sigma}{t})}{u} \to \subst{t}{\singsubv{x}{u}}}
+\and
+\inferrule[eta]{}
+    {\lamv{x}{\sigma}{\app{t}{x}} \to t}
+\quad(x \notin \FV{t})
+\end{mathpar}
+\begin{itemize}
+    \item Normalization $\sim$ successive rewrite steps
+    \item Normal form: no more rewrites are possible
+\end{itemize}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Problem with term rewriting}
+\begin{itemize}
+    %TODO with variable names: alpha-conversion avoiding variable capturing
+    %TODO de Bruijn-indices: some kind of renaming of the variables
+    %\item Substitution is tedious to implement (variable capturing, shifting de Bruijn indices)
+    %TODO elaborate on the example (there could be more uses of y, x could be a constant function)
+    \item The size of the term may grow $\to$ can be slow
+    \[ \app{(\lamv{y}{\beta}{\app{\app{x}{y}}{y}})}{t} \]
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What is reduction-free normalization?}
+\begin{itemize}
+    \item Use convertibility instead of reduction
+    \begin{itemize}
+        \item Convertibility is symmetric
+    \end{itemize}
+    \item Characterize normal forms differently
+    \begin{itemize}
+        \item Specify how to construct them
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+%TODO Niels: From Tait's proof, we get that computing normals by reducing beta redexes actually terminates
+%TODO Niels: Reduction-based approach:
+%Correctness follows by confluence (it doesnt matter how we rewrite) and by SN (so it terminates) and for that we use Tait
+
+%TODO define neutral terms and normal forms, relate them to the reduction-based notion
+\begin{comment}
+\begin{frame}{Normal forms and neutral terms}
+\begin{itemize}
+    \item We characterize \textit{long} $\beta\eta$-normal forms
+    %TODO say why \z.xyz is a normal form but xy is not, why this is desirable (they are convertible, and we want a unique normal form per equivalence class)
+    \item Normal form: no $\beta$-redex, functions are maximally applied, e.g.
+    \begin{itemize}
+        \item Examples: $\lamv{x}{\beta}{x}, \quad \lamv{z}{\beta}{\app{\app{x}{y}}{z}}$
+        \item Non-examples: $\app{x}{y}, \text{ where } x \in \Var[\functy{\beta}{\functy{\beta}{\beta}}]$
+    \end{itemize}
+    \item Neutral term: a variable applied to 0 or more normal forms
+    \begin{itemize}
+        \item Examples: $x, \quad \app{x}{(\lamv{y}{\beta}{y})}$
+        %\item Non-examples: $\lamv{x}{\beta}{x}, \quad \app{\lamv{x}{\beta}{x}}{y}$
+    \end{itemize}
+    %\item Note: we need $\eta$-expansion
+\end{itemize}
+\end{frame}
+\end{comment}
+
+\begin{comment}
+%TODO too many things on 1 slide
+\begin{frame}{Normal forms and neutral terms}
+\begin{itemize}
+    \item<1-> We characterize \textit{long} $\beta\eta$-normal forms
+    \begin{itemize}
+        \item Functions are maximally applied
+    \end{itemize}
+    \item<2-> Normal form: $\lamv{x_1}{\sigma_1}{\ldots \lamv{x_k}{\sigma_k}{\app{\app{\app{x}{n_1}}{\ldots}}{n_l}}}$, where $\typedvar{x}{\functy{\tau_1}{\functy{\ldots}{\functy{\tau_l}{\beta}}}}$
+    \[ \lamv{z}{\beta}{\app{\app{x}{y}}{z}},\text{ where } \typedvar{x}{\functy{\beta}{\functy{\beta}{\beta}}} \]
+    \item<3-> Neutral term: a variable applied to 0 or more normal forms
+    \[ x, \quad \app{x}{(\lamv{y}{\beta}{y})} \]
+\end{itemize}
+\end{frame}
+\end{comment}
+
+%TODO a nice thing about this definition is that we are able to implement normal forms as an inductive type
+\begin{frame}{Normal forms, inductively}
+\begin{itemize}
+    \item We characterize long $\beta\eta$-normal forms
+    \item Neutral element (Ne): a variable applied to 0 or more normal forms
+    \item Normal form (Nf): functions are maximally applied
+\end{itemize}
+\begin{figure}
+\begin{mathpar}
+\inferrule[var-ne]
+    {x \in \Var[\sigma]}
+    {x \in \Ne[\sigma]}
+\and
+\inferrule[app-ne]
+  {m \in \Ne[\functy{\sigma}{\tau}] \and n \in \Nf[\sigma]}
+  {\app{m}{n} \in \Ne[\tau]}
+\\
+\inferrule[shift]
+    {m \in \Ne[\beta]}
+    {m \in \Nf[\beta]}
+\and
+\inferrule[lam-nf]
+    {n \in \Nf[\tau]}
+    {\lamv{x}{\sigma}{n} \in \Nf[\functy{\sigma}{\tau}]}
+\end{mathpar}
+\end{figure}
+\end{frame}
+
+%TODO Tait's method is applicable in the reduction-based setting to prove strong normalization and confluence. Here we present a simplified version for comparison with NbE
+\begin{frame}{Normalization proofs}
+We look at two proofs:
+\begin{itemize}
+    \item Tait's method: weak normalization
+    \item Normalization by evalulation (NbE)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Weak normalization}
+\begin{thm}[Weak normalization]
+For all terms $\typedtm{t}{\sigma}$, there exists an $n \in \Nf[\sigma]$ such that $\conv{t}{n}{\sigma}$. In other words, all terms have a normal form.
+\end{thm}
+\begin{itemize}
+    \item Naive proof by induction on $t$ fails
+    \item We employ \textit{induction loading}: prove a stronger property by induction
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Steps of the proof}
+$\mathrm{WN}_\sigma = \setof{\typedtm{t}{\sigma}}{\text{t has a normal form}}$
+\begin{enumerate}
+    \item Define $\sem{\sigma} \subs \Tm[\sigma]$ (logical predicate)
+    \item Show that $t \in \sem{\sigma}$ for all $\typedtm{t}{\sigma}$ (Fundamental Lemma)
+    \item Show that $\sem{\sigma} \subs \mathrm{WN}_\sigma$.
+    \item Weak normalization follows from (2) and (3).
+\end{enumerate}
+\end{frame}
+%TODO say: now we go into a bit more detail on these steps
+
+\begin{frame}{Step 1: Logical predicate}
+We define $\sem{\sigma} \subs \Tm[\sigma]$ by induction on $\sigma$:
+\begin{align*}
+\sem{\beta} &= \setof{\typedtm{t}{\beta}}{t\text{ has a normal form}} \\
+\sem{\functy{\sigma}{\tau}} &= \setof{\typedtm{t}{\functy{\sigma}{\tau}}}{\forall \typedtm{u}{\sigma}.\;u \in \sem{\sigma} \implies \app{t}{u} \in \sem{\tau}}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Step 2: Fundamental Lemma}
+Substitution: mapping from variables to terms
+\begin{lem}[Fundamental Lemma]
+Let $\typedtm{t}{\sigma}$ and let $\gamma$ be a substitution. If $\gamma(x) \in \sem{\tau}$ for all $x \in \FV[\tau]{t}$, then $\subst{t}{\gamma} \in \sem{\sigma}$.
+\end{lem}
+\end{frame}
+
+%TODO better title? What to call the lemma?
+\begin{frame}{Step 3}
+\begin{itemize}
+    \item Goal: prove $\sem{\sigma} \subs \mathrm{WN}_\sigma$
+    \item To do so, we need another statement
+\end{itemize}
+$\mathrm{WA}_\sigma = \setof{\typedtm{t}{\sigma}}{t\text{ is convertible to a neutral element}}$
+\begin{lem}
+For all types $\sigma$, we have
+\begin{enumerate}
+    \item $\sem{\sigma} \subs \mathrm{WN}_\sigma$
+    \item $\mathrm{WA}_\sigma \subs \sem{\sigma}$
+\end{enumerate}
+\end{lem}
+\end{frame}
+
+\begin{frame}{Normalization function}
+The previous proof does not give a normalization procedure \\
+We want $\name{nf}_\sigma : \Tm[\sigma] \to \Nf[\sigma]$ with the following correctness properties:
+\begin{itemize}
+    \item (\textit{soundness}) if $\conv{t}{u}{\sigma}$, then $\name{nf}_\sigma(t) = \name{nf}_\sigma(u)$, and
+    \item (\textit{completeness}) for all $\typedtm{t}{\sigma}$, we have $\conv{t}{\name{nf}_\sigma(t)}{\sigma}$.
+\end{itemize}
+\vspace{6pt}
+How to implement $\name{nf}_\sigma$?
+\end{frame}
+
+\begin{frame}{Normalization by \textit{evaluation} (NbE)}
+\begin{itemize}
+    \item Idea: normalization is like evaluation but for open terms
+    \item So, use denotational semantics
+    \item We need to map semantic objects back to normal forms: `quote'
+    \item Efficient: does all simplifications at once
+\end{itemize}
+\end{frame}
+
+%TODO is this slide necessary?
+\begin{frame}{A quick intro to denotational semantics}
+$X_\beta$ is some set
+\begin{align*}
+    \sem{\beta} &= X_\beta \\
+    \sem{\functy{\sigma}{\tau}} &= \funcset{\sem{\sigma}}{\sem{\tau}}
+\end{align*}
+We get an interpretation of terms:
+\[ \typedtm{t}{\sigma} \mapsto \sem{t} \in \sem{\sigma} \]
+\end{frame}
+
+\begin{frame}{Contexts}
+\begin{itemize}
+    \item We introduce contexts to keep track of free variables
+    \item Context: finite set of variables
+    \item $\cTm{\Gamma}{\sigma}$, $\cNe{\Gamma}{\sigma}$, $\cNf{\Gamma}{\sigma}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Main steps of NbE}
+\begin{enumerate}
+    \item Construct a model: $\sem{\sigma}$ $\sim$ logical predicate
+    \begin{itemize}
+        \item $\sem{\sigma}$ is a family of sets indexed by contexts
+    \end{itemize}
+    \item Interpretation of terms: $\sem{t}$ $\sim$ Fundamental Lemma
+    \item Define $\quotef{\Gamma}{\sigma} : \sem{\sigma} \Gamma \to \cNf{\Gamma}{\sigma}$ $\sim$ $\sem{\sigma} \subs \mathrm{WN}_\sigma$
+    \item Derive normalization function from (2) and (3)
+\end{enumerate}
+\end{frame}
+%TODO remark that the definition of the normalization function is analogous to the proof of weak normalization
+
+\begin{frame}{Step 1: Model construction}
+Recall the logical predicate:
+\begin{align*}
+\sem{\beta}
+    &= \setof{\typedtm{t}{\beta}}{t\text{ has a normal form}} \\
+\sem{\functy{\sigma}{\tau}}
+    &= \setof{\typedtm{t}{\functy{\sigma}{\tau}}}{\forall \typedtm{u}{\sigma}.\;u \in \sem{\sigma} \implies \app{t}{u} \in \sem{\tau}} \\
+    &\cong \setof{f : \sem{\sigma} \to \sem{\tau}}{\exists t.\forall u.\;f(u) = \app{t}{u}}
+\end{align*}
+Model for NbE:
+\begin{align*}
+\sem{\beta} \Gamma &= \cNf{\Gamma}{\beta} \\
+\sem{\functy{\sigma}{\tau}} \Gamma &= \setof{f \in \prod_{\Delta \sups \Gamma}{\funcset{\sem{\sigma} \Delta}{\sem{\tau} \Delta}}}{\ldots}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Step 2: Interpretation of terms}
+For details, see thesis
+\end{frame}
+
+%TODO remark that to define quote, we need unquote, just like for the auxiliary lemma
+\begin{frame}{Step 3: Quote and unquote}
+Recall:
+\begin{lem}
+For all types $\sigma$, we have
+\begin{enumerate}
+    \item $\sem{\sigma} \subs \mathrm{WN}_\sigma$
+    \item $\mathrm{WA}_\sigma \subs \sem{\sigma}$
+\end{enumerate}
+\end{lem}
+The corresponding components of NbE are
+\begin{enumerate}
+    \item $\quotef{\Gamma}{\sigma} : \sem{\sigma} \Gamma \to \cNf{\Gamma}{\sigma}$
+    \item $\unquotef{\Gamma}{\sigma} : \cNe{\Gamma}{\sigma} \to \sem{\sigma} \Gamma$
+\end{enumerate}
+\end{frame}
+
+\begin{comment}
+\begin{frame}
+\begin{itemize}
+    \item Define $\quotef{\Gamma}{\sigma} : \sem{\sigma}\Gamma \to \cNf{\Gamma}{\sigma}$ and $\unquotef{\Gamma}{\sigma} : \cNe{\Gamma}{\sigma} \to \sem{\sigma}\Gamma$
+    \item Define normalization function $\normf{\Gamma}{\sigma} : \cTm{\Gamma}{\sigma} \to \cNf{\Gamma}{\sigma}$
+    \begin{align*}
+        \normf{\Gamma}{\sigma}(t) &= \quotef{\Gamma}{\sigma}(\ksint{t}{\eta_\Gamma}{\Gamma}), \text{ where}\\
+        \idenv{\Gamma}(x, \Gamma') &= \unquotef{\Gamma'}{\sigma}(x)
+        \quad \text{for } (x : \sigma) \in \Gamma' \sups \Gamma
+    \end{align*}
+\end{itemize}
+\end{frame}
+\end{comment}
+
+%TODO mention categorical proof: categorification of NbE, uses categorical gluing construction, the high level proof structure is essentially the same
+%TODO the gluing category can be seen as the 'category of logical predicates'
+%TODO evaluation is given the universal property of $\syncat$ (initiality)
+\begin{frame}{Main steps of categorical proof}
+The structure is the same as NbE!
+\begin{itemize}
+    \item Model construction: glued category $\gluecat$ $\sim$ category of logical predicates
+    \item Evaluation functor $\cint[\glueint]{-}[\gluecat] : \syncat \to \gluecat$, where $\syncat$ is the initial model
+    \item Define quote and unquote
+    \item Derive normalization function from (2) and (3)
+\end{itemize}
+\end{frame}
+%TODO we skip the details due to lack of time
+
+%TODO summary
+%TODO say something about why categorical proof is nice: can be generalized to more complex type theories; the methods can be used to prove other metatheoretic properties (canonicity, parametricity)
+\begin{frame}{Conclusion}
+\begin{itemize}
+    \item We discussed different proofs of normalization (Tait, NbE)
+    \item They look different, but they are similar
+    \item Categorical gluing provides an abstraction
+    \begin{itemize}
+        \item Extends to more complex type theories (dependent/inductive types)
+        \item Can be used to prove other properties (canonicity, parametricity)
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\centering
+\Large Questions?
+\end{frame}
+
+\end{document}

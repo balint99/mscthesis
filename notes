@@ -1,0 +1,67 @@
+Andreas Abel PhD thesis
+
+Interesting thoughts:
+- Related work section of Coquand, Dybjer: Intuitionistic model constructions and normalization proofs
+- Introduction of Dybjer, Filinski: Normalization and partial evaluation
+- András MSc, sec. 4.4
+
+Remember:
+- purpose of MSc thesis is not to make a big research contribution
+- it is already nice to compare proofs and provide explanations
+- the process of writing the thesis and what you learn on the way is more important than the outcome
+- it showcases a bunch of stuff that I know and understand even if it is not interesting for researchers in the field
+- don't have to aim for the perfect mathematical framework/presentation (but would be useful and nice)
+
+Methodology
+- focus on structure: definitions and main theorems
+- fill in definitions
+- identify lemmas
+- write proofs
+- highlight key points
+
+TODO:
+content:
+- optional: add new requirements for NbE and prove them
+- optional: add categorical proof of extensional normalization
+- optional: discuss proofs using internal language of presheaf topos
+- check literature for proof that gluing category is cartesian closed (Crole 1994, Taylor 1999, Johnstone 2002)
+
+notation:
+- A,B,C for types instead of \sigma,\tau,\chi in substitution calculus
+- singleton contexts, term as substitution
+- context extension, substitution extension for syntax and scwf
+- types, terms, and substitutions for syntax and scwf
+- singleton substitution, lifted substitution
+- components of an scwf morphism
+- canonical interpretation
+- what to call \FSub?
+- resolve confusion of substitution, singleton lists and equivalence classes
+- use different fonts?
+
+editing:
+- check mathematical content
+- check punctuation, spelling, grammar
+- check punctuation in clauses ending with a diagram/equation
+- a/an scwf?
+- remove commands, replace them with informative sentences with a subject (e.g. see, compare)
+- what to call lemma, proposition, theorem?
+- replace notation environments with definition environments?
+- what to put into an environment, and what to put as flowing text?
+
+final touches:
+- check line breaks inside formulas
+- check overflowing lines
+- arrangement of rules/equations in figures
+- placement of figures
+
+- ordered (numbered) or unordered (bulleted) lists?
+- insert line break at the beginning of environment if the content is an enumeration
+- include horizontal line above an axiom?
+- titles for definitions/theorems
+- remove/add notation (and terminology) paragraph titles?
+- names of rules?
+
+- change order of arguments for \typedtm
+- always have author names before/in references?
+- tidy up references
+- tidy up labels

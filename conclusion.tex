@@ -1,0 +1,27 @@
+\begin{comment}
+\begin{itemize}
+    \item Give a short summary of what I did:
+    \begin{itemize}
+        \item I presented and compared 3 normalization proofs: Tait, NbE, gluing
+        \item On the way introduction to the model theory lambda calculus: Henkin models, Kripke models, simply typed categories with families
+    \end{itemize}
+    \item Future work
+    \begin{itemize}
+        \item generalize NbE and gluing in the same way I generalized Tait
+        \item Consider more complex type theories (e.g. dependent types, inductive types)
+    \end{itemize}
+\end{itemize}
+\end{comment}
+
+We presented and compared three reduction-free normalization proofs for the simply typed $\lambda$-calculus, all of which share a similar structure. The proofs have advantages and disadvantages.
+\begin{enum}
+    \item First, we proved weak normalization using Tait's idea of a convertibility predicate (Section~\ref{sec:Tait-proof}). An advantage of this proof is that it is rather short and easy to understand. A disadvantage is that the weak normalization theorem does not tell us how to compute the normal form of a term.
+    \item The second proof constructed a normalization function which computes the normal form of a given input term (Section~\ref{sec:nbe-alg}). This proof used the technique of normalization by evaluation, whereby normalization is implemented by interpreting the term in a suitable model and then turning the semantic object back into a normal form. An advantage of this proof is that it provides an efficient normalization algorithm which does not rely on concepts from term rewriting. A disadvantage is that the proof itself is more involved.
+    \item The third proof was a categorical reconstruction of normalization by evaluation using the categorical gluing construction (Chapter~\ref{chap:gluing}). The main advantage of this proof is that it is independent of the syntactic presentation of $\lambda$-calculus: it employs categorical semantics where the syntax can be characterized as an initial model. A disadvantage is that the constructions in this proof are complicated and abstract, and thus this proof is much harder to understand.
+\end{enum}
+
+On the way to presenting the proofs, we also provided introductions to various flavors of syntax and semantics for the simply typed $\lambda$-calculus. In particular, we discussed Henkin models, Kripke models, simply typed categories with families, and cartesian closed categories.
+
+As an attempt to generalize the structure of the Tait-like normalization proof, we introduced the notion of \textit{bilogical predicates}. Using this notion, we were able to give a very short proof of weak normalization for the simply typed $\lambda$-calculus. As future work, one could consider a similar generalization for normalization by evaluation.
+
+Another, orthogonal direction of research is to consider more complex type theories, such as dependent type theory or type theory with simple inductive types. A comparison between the different proof methods for such systems would be interesting.

@@ -1,0 +1,129 @@
+% Deze template is gemaakt door Fons van der Plas (f.vanderplas@student.ru.nl) voor het publiek domein en mag gebruikt worden **zonder vermelding van zijn naam**.
+% This template was created by Fons van der Plas (f.vanderplas@student.ru.nl) for the public domain, and may be used **without attribution**.
+\documentclass{report}
+\usepackage[utf8]{inputenc}     % for éô
+\usepackage[english]{babel}     % for proper word breaking at line ends
+\usepackage[a4paper, left=1.5in, right=1.5in, top=1.5in, bottom=1.5in]{geometry}
+                                % for page size and margin settings
+\usepackage{graphicx}           % for ?
+\usepackage{amsmath,amssymb}    % for better equations
+\usepackage{amsthm}             % for better theorem styles
+\usepackage{mathtools}          % for greek math symbol formatting
+\usepackage{enumitem}           % for control of 'enumerate' numbering
+\usepackage{listings}           % for control of 'itemize' spacing
+\usepackage{todonotes}          % for clear TODO notes
+\usepackage{hyperref}           % page numbers and '\ref's become clickable
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SET TITLE PAGE VALUES HERE %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%             ||               %
+%             ||               %
+%             \/               %
+
+\def\thesistitle{Normalization for the simply typed \texorpdfstring{$\lambda$}{lambda}-calculus}
+\def\thesissubtitle{A trilogy}
+\def\thesisauthorfirst{Bálint}
+\def\thesisauthorsecond{Kocsis}
+\def\thesissupervisorfirst{Niels}
+\def\thesissupervisorsecond{van der Weide}
+\def\thesissecondreaderfirst{Herman}
+\def\thesissecondreadersecond{Geuvers}
+\def\thesisdate{\today}
+
+
+%             /\               %
+%             ||               %
+%             ||               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SET TITLE PAGE VALUES HERE %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% FOR PDF METADATA
+\title{\thesistitle}
+\author{\thesisauthorfirst\space\thesisauthorsecond}
+\date{\thesisdate}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\newlist{enum}{enumerate}{3}
+\setlist[enum]{label = (\roman*), noitemsep, listparindent = \parindent}
+\newlist{items}{itemize}{3}
+\setlist[items]{label = $-$, noitemsep, listparindent = \parindent}
+
+\input{preamble}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\begin{titlepage}
+	\thispagestyle{empty}
+	\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+	\center
+	\textsc{\Large Radboud University Nijmegen}\\[.7cm]
+	\includegraphics[width=25mm]{img/in_dei_nomine_feliciter.eps}\\[.5cm]
+	\textsc{Faculty of Science}\\[0.5cm]
+	
+	\HRule \\[0.4cm]
+	{ \huge \bfseries \thesistitle}\\[0.1cm]
+	\textsc{\thesissubtitle}\\
+	\HRule \\[.5cm]
+	\textsc{\large Thesis MSc Computing Science}\\[.5cm]
+	
+	\begin{minipage}{0.4\textwidth}
+	\begin{flushleft} \large
+	\emph{Author:}\\
+	\thesisauthorfirst\space \textsc{\thesisauthorsecond}
+	\end{flushleft}
+	\end{minipage}
+	~
+	\begin{minipage}{0.4\textwidth}
+	\begin{flushright} \large
+	\emph{Supervisor:} \\
+	\thesissupervisorfirst\space \textsc{\thesissupervisorsecond} \\[1em]
+	\emph{Second reader:} \\
+	\thesissecondreaderfirst\space \textsc{\thesissecondreadersecond}
+	\end{flushright}
+	\end{minipage}\\[4cm]
+	\vfill
+	{\large \thesisdate}\\
+	\clearpage
+\end{titlepage}
+
+\tableofcontents
+
+\chapter{Introduction} \label{chap:intro}
+\input{intro}
+
+\chapter{Syntax and semantics of the simply typed \texorpdfstring{$\lambda$}{lambda}-calculus} \label{chap:stlc}
+\input{stlc}
+
+\chapter{Normalization for the simply typed \texorpdfstring{$\lambda$}{lambda}-calculus} \label{chap:norm-stlc}
+\input{norm-stlc}
+
+\chapter{Categorical preliminaries} \label{chap:cat-prelims}
+\input{cat-prelims}
+
+\chapter{Categorical semantics for the simply typed \texorpdfstring{$\lambda$}{lambda}-calculus} \label{chap:stlc-cat}
+\input{stlc-cat}
+
+\chapter{Gluing} \label{chap:gluing}
+\input{gluing}
+
+\chapter{Conclusion}
+\input{conclusion}
+
+% You can choose a citation style, 'plain' is the default
+% See:
+% https://www.overleaf.com/learn/latex/Bibtex_bibliography_styles
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}
+
+% Have fun!
+% -fons
+
+% http://www2.washjeff.edu/users/rhigginbottom/latex/resources/symbols.pdf

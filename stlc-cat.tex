@@ -1,0 +1,792 @@
+\begin{comment}
+syntax
+  1. well-scoped, well-typed terms and substitutions
+  2. equations
+  3. normal forms + neutral terms
+
+semantics
+  1. - scwfs: motivation, compare with syntax
+     - category of scwfs: morphisms are structure preserving maps or translations
+  2. initial scwf: what is syntax categorically, theorem + (sketch of) proof
+  3. CCCs: going from CCC to scwf -> semantics in CCCs
+\end{comment}
+
+\begin{comment}
+Chap: Categorical semantics for lambda-calculus
+Main goals: category of models, syntax is initial model
+Why? needed for gluing which is categorical -> forward pointer to gluing proof, backward pointer to introduction
+However: we look at a different syntax to motivate scwfs and for comparison with the previous syntax
+\end{comment}
+
+%TODO really ugly notation both for syntax and for scwfs. What are better alternatives?
+
+\begin{comment}
+Forward pointers (notion of model/category of models, syntax is initial)
+
+Key points
+\begin{items}
+\item why categorical semantics (provides a much wider range of interpretations for the $\lambda$-calculus, we need it for gluing proof which is categorical)
+\item two ways of categorical semantics for $\lambda$-calculus (CCC, scwf), their relation (possible to convert between the two structures), why we use scwf (syntax of $\lambda$-calculus without product types is not an initial CCC)
+\item different syntactic presentation, why (better suited for categorical treatment, motivation for scwfs i.e. notion of model, provide understanding by comparing it to previous syntax)
+\end{items}
+\end{comment}
+
+In Chapter~\ref{chap:stlc}, we discussed the syntax and semantics of simply typed $\lambda$-calculus in a traditional way. In this chapter, we will discuss the categorical semantics of simply typed $\lambda$-calculus.
+
+To motivate the categorical semantics, we first look at a different version of the syntax. This is done in Section~\ref{sec:stlc2-syntax}. There are two main differences between the new and the old syntax.
+\begin{items}
+    \item In the new syntax, we use de Bruijn indices instead of variable names. The goal of de Bruijn indices is to have a variable numbering scheme which eliminates the need for $\alpha$-conversion. With this scheme, each occurrence of a variable is replaced by the number of $\lambda$-binders between the occurrence of the variable and the binder the variable refers to. For example, the term
+    \[ \lamv{x}{\functy{\sigma}{\tau}}{\lamv{y}{\sigma}{\app{x}{y}}} \]
+    is expressed as
+    \[ \lambda^{\functy{\sigma}{\tau}}.\;\lambda^\sigma.\;\app{1}{0} \]
+    with de Bruijn indices.
+    \item Substitutions are made explicit in the new syntax. That is, while in the old syntax, substitution was an operation defined on terms, in the new syntax, substitution in terms is a primitive term former. Accordingly, instead of defining a substitution as a mapping from variables to terms, there are rules for the formation of substitutions in the syntax. Moreover, there are two convertibility relations: one for terms, one for substitutions.
+\end{items}
+
+After presenting the new syntax, we discuss the categorical semantics of the simply typed $\lambda$-calculus, including notions of models and morphisms, in Section~\ref{sec:stlc2-semantics}. We also give a general method to construct models from cartesian closed categories.
+
+\section{Simply typed \texorpdfstring{$\lambda$}{lambda}-calculus \`a la de Bruijn with explicit substitutions} \label{sec:stlc2-syntax}
+
+\begin{comment}
+Key points
+\begin{items}
+\item syntax (terms, substitutions, equations)
+\item normal forms
+\item comparison to previous syntax, explain similarities and differences
+\end{items}
+\end{comment}
+
+\begin{comment}
+Problem with traditional presentation: there are complications with substitution, making the formalism complicated (cf. remark in Chapter 2). Solution: use de Bruijn indices.
+
+Problem: it is still quite technical to define substitution. Solution: make substitution part of the syntax (explicit substitutions). Also need typing for substitutions, and additional conversion laws for terms and substitutions.
+Maybe motivation: having substitutions be part of the syntax (and not operations defined on the syntax) makes it clearer how to deal with them semantically.
+\end{comment}
+
+Types are as before (Definition~\ref{def:stlc-types}):
+\[ \sigma, \tau ::= \beta \sep \functy{\sigma}{\tau} \]
+where $\beta$ ranges over $\Basetypes$.
+
+Contexts are defined as follows.
+
+\begin{defn}[Context]
+A \emph{context} is a list of types.
+\end{defn}
+
+\begin{notn}
+\begin{enum}
+\item We denote the set of contexts by $\sCon$ and range over its elements by $\Gamma, \Delta, \Theta, \Xi$.
+%TODO notations for lists?
+%TODO identify singleton list with its element?
+\item The \emph{empty context} is denoted by $\sempcon$.
+\item If $\Gamma \in \Con$ and $\sigma \in \Ty$, then we write $\sextcon{\Gamma}{\sigma}$ for the \emph{extended context} obtained by appending $\sigma$ at the end of the list $\Gamma$.
+\end{enum}
+\end{notn}
+
+Now we define terms and substitutions.
+
+\begin{defn}
+%TODO better wording
+We generate two families $\sTm{\Gamma}{\sigma}$ and $\sSub{\Delta}{\Gamma}$ of sets, called \emph{terms} and \emph{substitutions}, respectively, by mutual induction. Terms are indexed in contexts and types, substitutions are indexed in pairs of contexts. The rules are displayed in Figure~\ref{fig:stlc2-terms-subs}). We write $\stypedtm{t}{\Gamma}{\sigma}$ for $t \in \sTm{\Gamma}{\sigma}$ and $\stypedsub{\gamma}{\Delta}{\Gamma}$ for $\gamma \in \sSub{\Delta}{\Gamma}$.
+
+\begin{figure}[ht]
+\begin{mathpar}
+\inferrule[vz]{}
+    {\stypedtm{\vz[\Gamma][\sigma]}{\sextcon{\Gamma}{\sigma}}{\sigma}}
+\and
+\inferrule[app]
+    {\stypedtm{t}{\Gamma}{\functy{\sigma}{\tau}} \and \stypedtm{u}{\Gamma}{\sigma}}
+    {\stypedtm{\app{t}{u}}{\Gamma}{\tau}}
+\and
+\inferrule[lam]
+    {\stypedtm{t}{\sextcon{\Gamma}{\sigma}}{\tau}}
+    {\stypedtm{\slam{\sigma}{t}}{\Gamma}{\functy{\sigma}{\tau}}}
+\and
+\inferrule[subst]
+    {\stypedtm{t}{\Gamma}{\sigma} \and \stypedsub{\gamma}{\Delta}{\Gamma}}
+    {\stypedtm{\ssubst{t}{\gamma}}{\Delta}{\sigma}}
+\and
+\inferrule[emp]{}
+    {\stypedsub{\sempsub[\Gamma]}{\Gamma}{\sempcon}}
+\and
+\inferrule[ext]
+    {\stypedsub{\gamma}{\Delta}{\Gamma} \and \stypedtm{t}{\Delta}{\sigma}}
+    {\stypedsub{\sextsub{\gamma}{t}}{\Delta}{\sextcon{\Gamma}{\sigma}}}
+\and
+\inferrule[id]{}
+    {\stypedsub{\sidsub[\Gamma]}{\Gamma}{\Gamma}}
+\and
+\inferrule[comp]
+    {\stypedsub{\gamma}{\Delta}{\Gamma} \and \stypedsub{\delta}{\Theta}{\Delta}}
+    {\stypedsub{\scompsub{\gamma}{\delta}}{\Theta}{\Gamma}}
+\and
+\inferrule[proj]{}
+    {\stypedsub{\spsub[\Gamma][\sigma]}{\sextcon{\Gamma}{\sigma}}{\Gamma}}
+\end{mathpar}
+\caption{Terms and substitutions}
+\label{fig:stlc2-terms-subs}
+\end{figure}
+\end{defn}
+
+\begin{comment}
+%TODO compare to previous syntax, explain term and substitution formers
+\begin{items}
+\item variable names vs de Bruijn indices, explicit substitution
+\item operations on substitutions
+\end{items}
+
+\begin{items}
+\item Context is a list of types representing for each position their type.
+\item A variable is a position in this context.
+\end{items}
+\end{comment}
+
+As mentioned before, the main difference between this syntax and the previous one is that the new syntax uses de Bruijn indices instead of variable names, and that substitutions are part of the rules for generating the syntax. Note however, that only the zero de Bruijn index $\vz[\Gamma][\sigma]$ is part of the generators for the syntax. The other de Bruijn indices are expressed in terms of this and the weakening substitution $\spsub[\Gamma][\sigma]$ as follows.
+
+\begin{defn}[De Bruijn indices]
+%TODO better wording
+%TODO just call them variables?
+We define a subset $\sVar{\Gamma}{\sigma} \subs \sTm{\Gamma}{\sigma}$ of terms, called \emph{de Bruijn indices}, by induction. The rules are displayed in Figure~\ref{fig:stlc2-de-Bruijn-indices}. We write $\stypedvar{x}{\Gamma}{\sigma}$ for $x \in \sVar{\Gamma}{\sigma}$.
+
+\begin{figure}[ht]
+\begin{mathpar}
+\inferrule[vz]{}{\stypedvar{\vz[\Gamma][\sigma]}{\sextcon{\Gamma}{\sigma}}{\sigma}}
+\and
+\inferrule[vs]
+    {\stypedvar{x}{\Gamma}{\sigma}}
+    {\stypedvar{\ssubst{x}{\spsub[\Gamma][\tau]}}{\sextcon{\Gamma}{\tau}}{\sigma}}
+\end{mathpar}
+\caption{Rules for de Bruijn indices}
+\label{fig:stlc2-de-Bruijn-indices}
+\end{figure}
+\end{defn}
+
+Thus, a de Bruijn index is of the form $\ssubst{\vz}{\spsub^n}$ for some natural number $n$, where $\spsub^n$ denotes an $n$-fold composition of $\spsub$ of the appropriate types. Such a de Bruijn index points to the $n$-th free variable in the context, counting from zero.
+
+%TODO notation for de Bruijn indices?
+
+%TODO ugly notation
+%TODO better terminology?
+\begin{notn} \label{not:special-subs}
+\begin{enum}
+\item For $\stypedtm{t}{\Gamma}{\sigma}$, let $\stmsub{t} \in \sSub{\Gamma}{[\sigma]}$ be the substitution $\sextsub{\sempsub[\Gamma]}{t}$.
+\item For $\stypedtm{t}{\Gamma}{\sigma}$, let $\ssingsub{t} \in \sSub{\Gamma}{\sextcon{\Gamma}{\sigma}}$ denote the \emph{singleton substitution} $\sextsub{\sidsub[\Gamma]}{t}$.
+\item For $\stypedsub{\gamma}{\Delta}{\Gamma}$ and $\sigma \in \Ty$, let $\sliftsub[\sigma]{\gamma} \in \sSub{\sextcon{\Delta}{\sigma}}{\sextcon{\Gamma}{\sigma}}$ denote the \emph{lifted substitution} $\sextsub{\scompsub{\gamma}{\spsub[\Delta][\sigma]}}{\vz[\Delta][\sigma]}$.
+\end{enum}
+\end{notn}
+
+The convertibility relation is defined similarly to the traditional presentation. However, we also need to define convertibility for substitutions.
+
+\begin{defn}[Convertibility]
+%TODO better wording
+We generate two families of equivalence relations
+\[ \sconvreltm{\Gamma}{\sigma} \subs \cartprod{\sTm{\Gamma}{\sigma}}{\sTm{\Gamma}{\sigma}} \quad\text{and}\quad
+    \sconvrelsub{\Delta}{\Gamma} \subs \cartprod{\sSub{\Delta}{\Gamma}}{\sSub{\Delta}{\Gamma}} \]
+by mutual induction. The rules are displayed in Figure~\ref{fig:stlc2-equations}). We write $\sconvtm{t}{t'}{\Gamma}{\sigma}$ for $(t, t') \in \sconvreltm{\Gamma}{\sigma}$ and $\sconvsub{\gamma}{\gamma'}{\Delta}{\Gamma}$ for $(\gamma, \gamma') \in \sconvrelsub{\Delta}{\Gamma}$.
+
+\begin{figure}[t!]
+\begin{mathpar}
+\inferrule[refl]
+    {\stypedtm{t}{\Gamma}{\sigma}}
+    {\sconvtm{t}{t}{\Gamma}{\sigma}}
+\and
+\inferrule[trans]
+    {\sconvtm{t}{u}{\Gamma}{\sigma} \and \sconvtm{u}{v}{\Gamma}{\sigma}}
+    {\sconvtm{t}{v}{\Gamma}{\sigma}}
+\and
+\inferrule[sym]
+    {\sconvtm{t}{u}{\Gamma}{\sigma}}
+    {\sconvtm{u}{t}{\Gamma}{\sigma}}
+\and
+\inferrule[cong-app]
+    {\sconvtm{t}{t'}{\Gamma}{\functy{\sigma}{\tau}} \and \sconvtm{u}{u'}{\Gamma}{\sigma}}
+    {\sconvtm{\app{t}{u}}{\app{t'}{u'}}{\Gamma}{\tau}}
+\and
+\inferrule[cong-lam]
+    {\sconvtm{t}{t'}{\sextcon{\Gamma}{\sigma}}{\tau}}
+    {\sconvtm{\slam{\sigma}{t}}{\slam{\sigma}{t'}}{\Gamma}{\functy{\sigma}{\tau}}}
+\and
+\inferrule[cong-subst]
+    {\sconvtm{t}{t'}{\Gamma}{\sigma} \and \sconvsub{\gamma}{\gamma'}{\Delta}{\Gamma}}
+    {\sconvtm{\ssubst{t}{\gamma}}{\ssubst{t'}{\gamma'}}{\Delta}{\sigma}}
+\and
+\inferrule[cong-ext]
+    {\sconvsub{\gamma}{\gamma'}{\Delta}{\Gamma} \and \sconvtm{t}{t'}{\Delta}{\sigma}}
+    {\sconvsub{\sextsub{\gamma}{t}}{\sextsub{\gamma'}{t'}}{\Delta}{\sextcon{\Gamma}{\sigma}}}
+\and
+\inferrule[cong-comp]
+    {\sconvsub{\gamma}{\gamma'}{\Delta}{\Gamma} \and \sconvsub{\delta}{\delta'}{\Theta}{\Delta}}
+    {\sconvsub{\scompsub{\gamma}{\delta}}{\scompsub{\gamma'}{\delta'}}{\Theta}{\Gamma}}
+\and
+\inferrule[beta]
+    {\stypedtm{t}{\sextcon{\Gamma}{\sigma}}{\tau} \and \stypedtm{u}{\Gamma}{\sigma}}
+    {\sconvtm{\app{(\slam{\sigma}{t})}{u}}{\ssubst{t}{\ssingsub{u}}}{\Gamma}{\tau}}
+\and
+\inferrule[eta]
+    {\stypedtm{t}{\Gamma}{\functy{\sigma}{\tau}}}
+    {\sconvtm{\slam{\sigma}{\app{\ssubst{t}{\spsub}}{\vz}}}{t}{\Gamma}{\functy{\sigma}{\tau}}}
+\and
+\inferrule[emp-eta]
+    {\stypedsub{\gamma}{\Gamma}{\sempcon}}
+    {\sconvsub{\gamma}{\sempsub[\Gamma]}{\Gamma}{\sempcon}}
+\and
+\inferrule[id-l]
+    {\stypedsub{\gamma}{\Delta}{\Gamma}}
+    {\sconvsub{\scompsub{\sidsub[\Gamma]}{\gamma}}{\gamma}{\Delta}{\Gamma}}
+\and
+\inferrule[id-r]
+    {\stypedsub{\gamma}{\Delta}{\Gamma}}
+    {\sconvsub{\scompsub{\gamma}{\sidsub[\Delta]}}{\gamma}{\Delta}{\Gamma}}
+\and
+\inferrule[comp-assoc]
+    {\stypedsub{\gamma}{\Delta}{\Gamma} \and \stypedsub{\delta}{\Theta}{\Delta} \and \stypedsub{\theta}{\Xi}{\Theta}}
+    {\sconvsub{\scompsub{(\scompsub{\gamma}{\delta})}{\theta}}{\scompsub{\gamma}{(\scompsub{\delta}{\theta})}}{\Xi}{\Gamma}}
+\and
+\inferrule[proj]
+    {\stypedsub{\gamma}{\Delta}{\Gamma} \and \stypedtm{t}{\Delta}{\sigma}}
+    {\sconvsub{\scompsub{\spsub}{(\sextsub{\gamma}{t})}}{\gamma}{\Delta}{\Gamma}}
+\and
+\inferrule[var-subst]
+    {\stypedsub{\gamma}{\Delta}{\Gamma} \and \stypedtm{t}{\Delta}{\sigma}}
+    {\sconvtm{\ssubst{\vz}{(\sextsub{\gamma}{t})}}{t}{\Delta}{\sigma}}
+\and
+\inferrule[app-subst]
+    {\stypedtm{t}{\Gamma}{\functy{\sigma}{\tau}} \and \stypedtm{u}{\Gamma}{\sigma} \and \stypedsub{\gamma}{\Delta}{\Gamma}}
+    {\sconvtm{\ssubst{(\app{t}{u})}{\gamma}}{\app{\ssubst{t}{\gamma}}{\ssubst{u}{\gamma}}}{\Delta}{\tau}}
+\and
+\inferrule[lam-subst]
+    {\stypedtm{t}{\sextcon{\Gamma}{\sigma}}{\tau} \and \stypedsub{\gamma}{\Delta}{\Gamma}}
+    {\sconvtm{\ssubst{(\slam{\sigma}{t})}{\gamma}}{\slam{\sigma}{\ssubst{t}{(\sliftsub[\sigma]{\gamma})}}}{\Delta}{\functy{\sigma}{\tau}}}
+\and
+\inferrule[subst-id]
+    {\stypedtm{t}{\Gamma}{\sigma}}
+    {\sconvtm{\ssubst{t}{(\sidsub[\Gamma])}}{t}{\Gamma}{\sigma}}
+\and
+\inferrule[subst-comp]
+    {\stypedtm{t}{\Gamma}{\sigma} \and \stypedsub{\gamma}{\Delta}{\Gamma} \and \stypedsub{\delta}{\Theta}{\Delta}}
+    {\sconvtm{\ssubst{t}{(\scompsub{\gamma}{\delta})}}{\ssubst{(\ssubst{t}{\gamma})}{\delta}}{\Theta}{\sigma}}
+\and
+\inferrule[ext-eta]
+    {\stypedsub{\gamma}{\Delta}{\sextcon{\Gamma}{\sigma}}}
+    {\sconvsub{\sextsub{\scompsub{\spsub}{\gamma}}{\ssubst{\vz}{\gamma}}}{\gamma}{\Delta}{\sextcon{\Gamma}{\sigma}}}
+\end{mathpar}
+\caption{Equations between terms and substitutions}
+\label{fig:stlc2-equations}
+\end{figure}
+\end{defn}
+
+%TODO list some additional useful equations that can be derived
+
+Finally, we define normal forms and neutral terms. These are defined similarly to the traditional presentation.
+
+\begin{defn}
+%TODO better wording
+We define two families $\sNe{\Gamma}{\sigma}$ and $\sNf{\Gamma}{\sigma}$ of subsets of $\sTm{\Gamma}{\sigma}$, called \emph{neutral terms} and \emph{normal forms}, respectively, by mutual induction. The rules are displayed in Figure~\ref{fig:stlc2-normal-forms}. We write $\stypedne{m}{\Gamma}{\sigma}$ for $m \in \sNe{\Gamma}{\sigma}$ and $\stypednf{n}{\Gamma}{\sigma}$ for $n \in \sNf{\Gamma}{\sigma}$.
+
+\begin{figure}[ht]
+\begin{mathpar}
+\inferrule[var]
+    {\stypedvar{x}{\Gamma}{\sigma}}
+    {\stypedne{x}{\Gamma}{\sigma}}
+\and
+\inferrule[app]
+    {\stypedne{m}{\Gamma}{\functy{\sigma}{\tau}} \and \stypednf{n}{\Gamma}{\sigma}}
+    {\stypedne{\app{m}{n}}{\Gamma}{\tau}}
+\\
+\inferrule[shift]
+    {\stypedne{m}{\Gamma}{\beta}}
+    {\stypednf{m}{\Gamma}{\beta}}
+\quad(\beta \in \Basetypes)
+\and
+\inferrule[lam]
+    {\stypednf{n}{\sextcon{\Gamma}{\sigma}}{\tau}}
+    {\stypednf{\slam{\sigma}{n}}{\Gamma}{\functy{\sigma}{\tau}}}
+\end{mathpar}
+\caption{Normal forms and neutral terms}
+\label{fig:stlc2-normal-forms}
+\end{figure}
+\end{defn}
+
+For the gluing proof, we also need neutral substitutions, which are essentially lists of neutral terms. Note that a substitution is equivalently given by a list of terms.
+
+\begin{defn}
+A substitution is neutral if every term in it is neutral.
+\end{defn}
+
+The identity substitution is convertible to a neutral by definition, and thus it is neutral as well.
+
+\begin{prop}
+The identity substitution is neutral.
+\end{prop}
+\begin{proof}
+The identity substitution can be expressed as a list of variables, all of which are neutral terms.
+\end{proof}
+
+\section{Semantics} \label{sec:stlc2-semantics}
+
+\begin{comment}
+Key points
+\begin{items}
+\item notion of model: scwf, relate to syntax
+\item morphisms of models, category of models
+\item syntax is an initial model, abstract syntax: it is characterized by a universal model-theoretic property, independent of syntactic presentations (hides syntactic details, e.g. variable names vs de Bruijn indices, implicit vs explicit substitutions, preterms vs intrinsically typed/scoped terms), allows us work at an appropriate level of abstraction
+\item CCCs are models (connect to previous chapter and to gluing proof)
+\end{items}
+\end{comment}
+
+In this section, we introduce a notion of model for the simply typed $\lambda$ calculus which we call \textit{$\lambda$-domain}, based on simply typed categories with families. We also define morphisms of such models, leading to the category of $\lambda$-domains. Next, we construct an initial model from the syntax of $\lambda$-calculus. Finally, we show how every cartesian closed category gives rise to a $\lambda$-domain.
+
+\subsection{Simply typed categories with families} \label{sec:scwf}
+
+%TODO alternative presentation: define scwfs as a generalized algebraic structure (collection of sets/families and operations on those subject to equations) motivated by the syntax in the previous section, and remark that a more concise definition is possible.
+
+Categories with families provide a nice categorical setting for dealing with type systems with variable binding, especially those with dependent types. They were originally invented by Dybjer \cite{dybjer:1996:types} to model a basic framework for dependent types (essentially, Martin-Löf type theory without any type formers). The axioms of categories with families thus serve to formalize the notions of context, substitution, and variables corresponding to the judgmental framework of dependent type theories.
+
+%TODO reference for Martin-Löf's substitution calculus
+%TODO how to punctuate the second sentence? -- or ; or , or .?
+Categories with families can be seen as models of the structural components of dependent type theory. However, they lie rather close to the syntax of dependent type theory -- specifically, Martin-Löf's substitution calculus. Thus, they can act as an intermediary between syntax (formal systems) and semantics (categorical/algebraic notions). This double role enables one to prove equivalences between certain type theories and some classes of models for those type theories. For instance, see \cite{DBLP:journals/mscs/ClairambaultD14} for the case of Martin-Löf type theory, and \cite{castellan:2021:cwf} for results about various simpler type systems.
+
+In this section, we introduce a kind of semantic domain (Definition~\ref{def:lambda-domain}) in which to interpret the simply typed $\lambda$-calculus. The notion is based on \textit{simply typed categories with families} (Definition~\ref{def:scwf}), a simplified version of categories with families, where types do not depend on contexts. This simplified version provides a notion of model for a bare-bones simple type system with no type formers and only variables as terms. As such, simply typed categories with families are a suitable basis for modelling more complex type systems. For instance, we shall see (Definition~\ref{def:function-structure}) how to incorporate function types, which are necessary to model $\lambda$-calculus.
+
+For a more thorough introduction to categories with families in general, we refer the reader to \cite{dybjer:1996:types} and \cite{castellan:2021:cwf}.
+
+\begin{defn}[Scwf] \label{def:scwf}
+A \emph{simply typed category with families}, or \emph{scwf}, consists of:
+\begin{enum}
+    \item a category $\cat{C}$ with a terminal object $\1$,
+    \item a set $\STy$,
+    \item for every $A \in \STy$, a presheaf $\STm{A} : \op{\cat{C}} \to \Set$, and
+    \item for every $\Gamma \in \cat{C}$ and $A \in \STy$, a representation of the presheaf $\cprod{\yap{\Gamma}}{\STm{A}} : \op{\cat{C}} \to \Set$.
+\end{enum}
+\end{defn}
+
+Definition~\ref{def:scwf} is rather concise, but may be hard to understand for a reader not trained in category theory, also known as \textit{general abstract nonsense}\footnote{\url{https://en.wikipedia.org/wiki/Abstract_nonsense}}. It turns out that the data packed in the definition matches the syntax of simply typed $\lambda$-calculus presented in Section~\ref{sec:stlc2-syntax}, excluding function types, application, and abstraction. Let us unpack the definition to illustrate this point. The notation and terminology regarding scwfs also help make the connection clearer.
+
+%TODO paragraphs inside the list? or just one paragraph for each item?
+\begin{enum}
+    \item The category $\cat{C}$ is called the \emph{base category} of the scwf. Its objects are referred to as \emph{contexts}, and its morphisms as \emph{substitutions}. For this reason, we also write $\SCon$ for $\Ob{\cat{C}}$ and $\SSub{\Delta}{\Gamma}$ for $\Hom[\cat{C}]{\Delta}{\Gamma}$. Since $\cat{C}$ is a category, we have the usual composition and identity operations on substitutions.
+    
+    The terminal object $\1$ is called the \emph{empty context} and written as $\Sempcon$. The unique map $\Gamma \to \Sempcon$ is called the \emph{empty substitution} and written as $\Sempsub[\Gamma]$.
+    
+    We use capital Greek letters ($\Gamma, \Delta, \Theta, \ldots$) to range over contexts, and lowercase Greek letters ($\gamma, \delta, \theta, \ldots$) to range over substitutions.
+
+    \item The elements of the set $\STy$ are referred to as \emph{types}. We use uppercase Latin letters ($A, B, C, \ldots$) to range over types.
+    
+    \item For $\Gamma \in \SCon$ and $A \in \STy$, the elements of $\STm{A}(\Gamma)$ are called \emph{terms of type $A$ in context $\Gamma$}. The set $\STm{A}(\Gamma)$ is also written as $\STm[\Gamma]{A}$.
+    
+    For a substitution $\gamma : \Delta \to \Gamma$, the functorial action of $\STm{A}$ gives a function
+    \[ \STm{A}(\gamma) : \STm[\Gamma]{A} \to \STm[\Delta]{A} \]
+    referred to as \emph{substitution in terms}. If $t \in \STm[\Gamma]{A}$, then we write $\Ssubst{t}{\gamma}$ for $\STm{A}(\gamma)(t)$.
+
+    We use lowercase Latin letters $(t, u, v, \ldots)$ to range over terms.
+
+    \item Given $\Gamma \in \SCon$ and $A \in \STy$, the presheaf $\cprod{\yap{\Gamma}}{\STm{A}} : \op{\cat{C}} \to \Set$ sends a context $\Delta$ to the set $\cartprod{\SSub{\Delta}{\Gamma}}{\STm[\Delta]{A}}$ and a substitution $\delta : \Theta \to \Delta$ to the function
+    \[
+    \begin{array}{rcl}
+    \cartprod{\SSub{\Delta}{\Gamma}}{\STm[\Delta]{A}},
+        &\to& \cartprod{\SSub{\Theta}{\Gamma}}{\STm[\Theta]{A}} \\
+    (\gamma, t) &\mapsto& (\Scompsub{\gamma}{\delta}, \Ssubst{t}{\delta}).
+    \end{array}
+    \]
+    
+    Thus, a representation of this presheaf amounts to a context $\Sextcon{\Gamma}{A}$ together with a substitution $\Spsub[\Gamma][A] : \Sextcon{\Gamma}{A} \to \Gamma$ and a term $\Sq[\Gamma][A] \in \STm[\Sextcon{\Gamma}{A}]{A}$ satisfying the following universal property:
+    for every context $\Delta$, substitution $\gamma : \Delta \to \Gamma$, and term $t \in \STm[\Delta]{A}$, there exists a unique substitution $\Sextsub{\gamma}{t} : \Delta \to \Sextcon{\Gamma}{A}$ such that
+    \[ \Scompsub{\Spsub[\Gamma][A]}{(\Sextsub{\gamma}{t})} = \gamma
+        \quad\text{and}\quad
+        \Ssubst{\Sq[\Gamma][A]}{\Sextsub{\gamma}{t}} = t. \]
+
+    We say that the triple $(\Sextcon{\Gamma}{A}, \Spsub[\Gamma][A], \Sq[\Gamma][A])$ is a \emph{context comprehension} of $\Gamma$ and $A$. We also say that $\Sextcon{\Gamma}{A}$ is obtained by \emph{extending} the context $\Gamma$ with the type $A$.
+\end{enum}
+
+We emphasize that the constants and operations $\Sempcon$, $\STy$, $\STm{-}$, $\Sextcon{}{}$, $\Spsub$, $\Sq$, and $\Sextsub{}{}$ are part of the \textit{structure} of an scwf. Hence, an scwf is formally a tuple $(\cat{C}, \Sempcon, \STy, \STm{}, \Sextcon{}{}, \Spsub, \Sq, \Sextsub{}{})$. In this thesis, however, we refer to scwfs only by their base category, and leave the other parts of the structure implicit. If necessary for disambiguation, we indicate the base category for the other components. For instance, $\SCon[\cat{C}]$, $\SSub{\Delta}{\Gamma}[\cat{C}]$, $\STy[\cat{C}]$, and $\STm[\Gamma]{A}[\cat{C}]$ denote, respectively, the collections of contexts, substitutions, types, and terms of the scwf $\cat{C}$. As before, we often omit superscripts and subscripts (e.g. in $\Spsub[\Gamma][A]$) to simplify notation.
+
+\begin{ex} \label{ex:set-scwf}
+We define the scwf $\Set$ of sets as follows.
+\begin{items}
+    \item Its base category is the category $\Set$ of sets.
+    \item Types are sets.
+    \item Terms $\STm{\Gamma}{A}$ are functions $\Gamma \to A$. Substitution in terms is given by precomposition of functions.
+    \item Context comprehension is given by cartesian products of sets and the projection functions.
+\end{items}
+\end{ex}
+
+\begin{rem}
+The notion of scwf can also be presented as a generalized algebraic theory \cite{cartmell:1986:apal}. The collections of contexts, substitutions, types, and terms become the sorts, and the empty context, empty substitution, substitution in terms, and context comprehension become the operations of the theory, subject to the equations arising from the functoriality of $\STm{A}$ and the universal properties of the terminal object and representability.
+
+A full presentation of (dependently typed) cwfs as a generalized algebraic theory can be found in \cite{dybjer:1996:types}. A similar presentation for scwfs can be obtained by removing the dependency of types on terms. The resulting formal theory is essentially the same as the syntax of simply typed $\lambda$-calculus presented in Section~\ref{sec:stlc2-syntax} (again, excluding functions).
+\end{rem}
+
+%TODO same todos as for \ref{not:special-subs}
+%TODO are all of these necessary?
+The following notations are the semantic counterpart of Notation~\ref{not:special-subs}.
+\begin{notn}
+\begin{enum}
+\item For $t \in \STm[\Gamma]{A}$, let $\Stmsub{t} : \Gamma \to \Sextcon{\Sempcon}{A}$ be the substitution $\Sextsub{\Sempsub[\Gamma]}{t}$.
+\item For $t \in \STm[\Gamma]{A}$, let $\Ssingsub{t} : \Gamma \to \Sextcon{\Gamma}{A}$ denote the \emph{singleton substitution} $\Sextsub{\Sidsub[\Gamma]}{t}$.
+\item For $\gamma : \Delta \to \Gamma$ and $A \in \STy$, let $\Sliftsub[A]{\gamma} : \Sextcon{\Delta}{A} \to \Sextcon{\Gamma}{A}$ denote the \emph{lifted substitution} $\Sextsub{(\Scompsub{\gamma}{\Spsub})}{\Sq}$.
+\end{enum}
+\end{notn}
+
+To model type formers, we need to require additional structure on scwfs. This structure essentially consists of operations on types and terms, corresponding to the type formation, introduction, and elimination rules of type systems, satisfying certain equations corresponding to $\beta$ and optionally $\eta$-rules for the type former. For our minimalistic simply typed $\lambda$-calculus presented in Section~\ref{sec:stlc2-syntax}, it suffices to define what it means for an scwf to support function types.
+
+%TODO what to call this? Castellan, Claraimbault and Dybjer call it \To-structure
+%TODO notation for function type, maybe use \To?
+\begin{defn}[Function-structure] \label{def:function-structure}
+A function-structure on an scwf $\cat{C}$ consists of a type former $\Sfuncty{-}{-} : \cartprod{\STy}{\STy} \to \STy$ and for each $\Gamma \in \cat{C}$ and $A, B \in \STy$, term formers
+\begin{align*}
+\Sapp[\Gamma, A, B]{-}{-} &: \cartprod{\STm[\Gamma]{\Sfuncty{A}{B}}}{\STm[\Gamma]{A}} \to \STm[\Gamma]{B} \\
+\Slam{A}[\Gamma, B]{-} &: \STm[\Sextcon{\Gamma}{A}]{B} \to \STm[\Gamma]{\Sfuncty{A}{B}}
+\end{align*}
+satisfying the equations
+\begin{align}
+\Sapp[\Gamma, A, B]{\Slam{A}[\Gamma, B]{s}}{u}
+    &= \Ssubst{s}{\Ssingsub{u}} \label{eq:scwf-beta} \\
+\Slam{A}[\Gamma, B]{\Sapp[\Sextcon{\Gamma}{A}, A, B]{\Ssubst{t}{\Spsub}}{\Sq}}
+    &= t \label{eq:scwf-eta} \\
+\Ssubst{(\Sapp[\Gamma, A, B]{t}{u})}{\gamma}
+    &= \Sapp[\Delta, A, B]{\Ssubst{t}{\gamma}}{\Ssubst{u}{\gamma}} \label{eq:scwf-app-subst}
+\end{align}
+for all $s \in \STm[\Sextcon{\Gamma}{A}]{B}$, $t \in \STm[\Gamma]{\Sfuncty{A}{B}}$, $u \in \STm[\Gamma]{A}$, and $\gamma : \Delta \to \Gamma$.
+\end{defn}
+
+Often, we drop the subscripts of $\Slam{A}[\Gamma, B]{-}$ and $\Sapp[\Gamma, A, B]{}{}$ to improve readability.
+%Occasionally, we may also omit the type of abstraction in $\Slam{A}{-}$ written as a superscript.
+
+In Definition~\ref{def:function-structure}, the operation $\Sapp[\Gamma, A, B]{}{}$ corresponds to function application in $\lambda$-calculus, and $\Slam{A}[\Gamma,B]{-}$ corresponds to $\lambda$-abstraction. The first and second equations correspond to the $\beta$ and $\eta$-rules, respectively. The third equation describes how to perform a substitution in an application.
+
+There is also a substitution law for abstraction: for each $t \in \STm[\Sextcon{\Gamma}{A}]{B}$ and $\gamma : \Delta \to \Gamma$, we have
+\begin{equation} \label{eq:scwf-lam-subst}
+\Ssubst{\Slam{A}[\Gamma, B]{t}}{\gamma} = \Slam{A}[\Delta, B]{\Ssubst{t}{\Sliftsub[A]{\gamma}}}.
+\end{equation}
+This law can be derived from the axioms of scwfs and function structures. Compare these equations with the corresponding rules in Figure~\ref{fig:stlc2-equations} (\textsc{beta}, \textsc{eta}, \textsc{app-subst}, and \textsc{lam-subst}).
+
+%TODO elaborate more on this?
+A function-structure on an scwf $\cat{C}$ is a tuple $(\Sfuncty{}{}$, $\Sapp{}{}$, $\Slam{}{-})$. To simplify notation, we usually omit the explicit reference to the function structure.
+
+\begin{ex}
+We define the function-structure on the scwf of sets as follows. The function type $\Sfuncty{A}{B}$ is given by the set of functions $\funcset{A}{B}$. The operations $\Slam{A}[\Gamma, B]{-}$ and $\Sapp[\Gamma,A,B]{}{}$ are given by currying and function application, respectively.
+\end{ex}
+
+We now introduce a notion of morphism between scwfs.
+
+%TODO fix ugly notation
+\begin{defn}[Strict scwf-morphism] \label{def:strict-scwf-morphism}
+Let $\cat{C}$ and $\cat{D}$ be scwfs. A \emph{strict scwf-morphism} from $\cat{C}$ to $\cat{D}$ consists of
+\begin{enum}
+    \item a functor $F : \cat{C} \to \cat{D}$ between the base categories,
+    \item a function $T : \STy[\cat{C}] \to \STy[\cat{D}]$, and
+    \item for each $A \in \STy[\cat{C}]$, a natural transformation $\tau_A : \STm{A}[\cat{C}] \to \STm{TA}[\cat{D}] \circ F$
+\end{enum}
+such that $F$ strictly preserves the empty context and $\tau$ strictly preserves context comprehension.
+\end{defn}
+
+Again, the compactness of the categorical definition above might obscure the intuitive idea behind strict scwf-morphisms. Thus, we spell out Definition~\ref{def:strict-scwf-morphism} in detail while also introducing notation for the components of a strict scwf-morphism.
+%TODO extremely verbose notation. Already start dropping the superscripts while spelling out the definition?
+\begin{enum}
+    \item We have a mapping $\scwfmorcon*{F} : \SCon[\cat{C}] \to \SCon[\cat{D}]$ of contexts, corresponding to the object part of the functor $F : \cat{C} \to \cat{D}$. The morphism part of $F$ is given by mappings $\scwfmorsub*{F}{\Delta}{\Gamma} : \SSub{\Delta}{\Gamma}[\cat{C}] \to \SSub{\scwfmorcon*{F}\Delta}{\scwfmorcon*{F}\Gamma}[\cat{D}]$ of substitutions for each $\Delta, \Gamma \in \SCon[\cat{C}]$.
+
+    The functoriality of $F$ means that composition and identities are preserved: we have
+    \[ \scwfmorsub*{F}{\Theta}{\Gamma}(\Scompsub{\gamma}{\delta})
+        = \Scompsub{\scwfmorsub*{F}{\Delta}{\Gamma}(\gamma)}{\scwfmorsub*{F}{\Theta}{\Delta}(\delta)} \]
+    for all $\gamma \in \SSub{\Delta}{\Gamma}[\cat{C}], \delta \in \SSub{\Theta}{\Delta}[\cat{C}]$, and
+    \[ \scwfmorsub*{F}{\Gamma}{\Gamma}(\Sidsub[\Gamma]) = \Sidsub[\scwfmorcon*{F}\Gamma] \]
+    for all $\Gamma \in \SCon[\cat{C}]$.
+
+    \item The function $T : \STy[\cat{C}] \to \STy[\cat{D}]$ provides a mapping from the types of $\cat{C}$ to the types of $\cat{D}$ and is written as $\scwfmorty*{F}$.
+
+    \item For each $A \in \STy[\cat{C}]$, the natural transformation $\tau_A : \STm{A}[\cat{C}] \to \STm{TA}[\cat{D}] \circ F$ is denoted by $\scwfmortm*{F}{A}$. Its components $(\tau_A)_\Gamma : \STm[\Gamma]{A}[\cat{C}] \to \STm[\scwfmorcon*{F}\Gamma]{\scwfmorty*{F}A}$ for $\Gamma \in \SCon[\cat{C}]$ are mappings of terms and are denoted by $\scwfmortm*{F}[\Gamma]{A}$. Naturality of $\scwfmortm*{F}{A}$ amounts to preservation of substitution in terms. That is, for all $t \in \STm[\Gamma]{A}[\cat{C}]$ and $\gamma \in \SSub{\Delta}{\Gamma}[\cat{C}]$, we have
+    \[ \scwfmortm*{F}[\Delta]{A}(\Ssubst{t}{\gamma}) = \Ssubst{\scwfmortm*{F}[\Gamma]{A}(t)}{\scwfmorsub*{F}{\Delta}{\Gamma}(\gamma)}. \]
+
+    \item Strict preservation of the empty context means that $\scwfmorcon*{F}(\Sempcon[\cat{C}]) = \Sempcon[\cat{D}]$.
+
+    \item Finally, strict preservation of context comprehension means that
+    \begin{align*}
+    \scwfmorcon*{F}(\Sextcon{\Gamma}{A})
+        &= \Sextcon{\scwfmorcon*{F}\Gamma}{\scwfmorty*{F}A} \\
+    \scwfmorsub*{F}{\Sextcon{\Gamma}{A}}{\Gamma}(\Spsub[\Gamma][A])
+        &= \Spsub[\scwfmorcon*{F}\Gamma][\scwfmorty*{F}A] \\
+    \scwfmortm*{F}[\Sextcon{\Gamma}{A}]{A}(\Sq[\Gamma][A])
+        &= \Sq[\scwfmorcon*{F}\Gamma][\scwfmorty*{F}A].
+    \end{align*}
+    We can also rephrase this condition by saying that, for all $\Gamma \in \SCon[\cat{C}]$ and $A \in \STy[\cat{C}]$, the triple
+    \[ (\scwfmorcon*{F}(\Sextcon{\Gamma}{A}),
+        \scwfmorsub*{F}{\Sextcon{\Gamma}{A}}{\Gamma}(\Spsub[\Gamma][A]),
+        \scwfmortm*{F}{\Sextcon{\Gamma}{A}}{A}(\Sq[\Gamma][A])) \]
+    is a context comprehension of $\scwfmorcon*{F}\Gamma \in \SCon[\cat{D}]$ and $\scwfmorty*{F}A \in \STy[\cat{D}]$.
+\end{enum}
+
+Similarly to scwfs, scwf-morphisms have several components. Formally, an scwf-morphism from $\cat{C}$ to $\cat{D}$ is a tuple $(F, T, \tau)$. By convention, we use the symbol for the base functor to denote all three components of an scwf-morphism. However, as demonstrated above, the notation can get quite verbose. To simplify notation, we drop the superscripts and subscripts most of the time, since they can usually be inferred from the argument of $F$.
+
+Note that our notion of scwf-morphism is exactly the same as one would expect when viewing scwfs as generalized algebraic structures: they are structure preserving mappings between the sorts of the structures. If one thinks about the sorts (contexts, substitutions, types, terms) syntactically, then a good intuition for scwf-morphisms is that they are syntactic translations from one theory to another one.
+
+\begin{defn} \label{def:scwf-morphism-preserves-function-structure}
+Suppose $\cat{C}$ and $\cat{D}$ are scwfs with function-structures. An scwf-morphism $F : \cat{C} \to \cat{D}$ is said to \emph{strictly preserve the function-structure} if
+\[ F(\Sfuncty{A}{B}) = \Sfuncty{FA}{FB} \quad\text{and}\quad
+    F(\Sapp[\Gamma,A,B]{t}{u}) = \Sapp[F\Gamma,FA,FB]{Ft}{Fu} \]
+for all $\Gamma \in \SCon[\cat{C}]$, $A, B \in \STy[\cat{C}]$, $t \in \STm[\Gamma]{\Sfuncty{A}{B}}$, and $u \in \STm[\Gamma]{A}$.
+\end{defn}
+
+In Definition~\ref{def:scwf-morphism-preserves-function-structure}, we only require $F$ to preserve the application operation. By the axioms of scwfs and function-structures, this already implies that it also preserves abstraction. That is, we have
+\[ F(\Slam{A}[\Gamma,B]{t}) = \Slam{FA}[F\Gamma,FB]{Ft} \]
+for all $t \in \STm[\Sextcon{\Gamma}{A}]{B}$.
+
+Scwfs equipped with a function structure provide the main notion of semantic domain for the simply typed $\lambda$-calculus in this and the next chapter. Hence, we introduce the following terminology.
+
+\begin{defn} \label{def:lambda-domain}
+\begin{enum}
+    \item A \emph{$\lambda$-domain} is an scwf equipped with a function-structure.
+    \item A \emph{morphism of $\lambda$-domains} is an scwf-morphism preserving the function-structure.
+\end{enum}
+\end{defn}
+
+%TODO replace 'stable under' by 'preserved by'?
+It is easy to see that scwf-morphisms are componentwise composable, and that the identity morphism at each component gives an identity scwf-morphism on each scwf. Moreover, the property of preservation of function-structure is stable under composition, and the identity scwf-morphisms trivially preserve the function-structure. Hence:
+
+\begin{defn} \label{def:cat-lambda-domain}
+$\lambda$-domains and their morphisms form a category $\Ldom$.
+\end{defn}
+
+\subsection{Abstract syntax and models}
+%TODO better title?
+%TODO too many forward pointers? Too many references to figure with equations?
+
+The goal of this section is to show that there exists a \textit{syntactic $\lambda$-domain} (Definition~\ref{def:syn-ldom}) which satisfies the universal property of being a free $\lambda$-domain over the set of base types $\Basetypes$ (Theorem~\ref{thm:syncat-free-ldom}). We then define a notion of model for the simply typed $\lambda$-calculus (Definition~\ref{def:stlc2-mod}) and show that there is a \textit{syntactic model} (Definition~\ref{def:syn-mod}) which is initial in the category of models (Theorem~\ref{thm:syn-mod-init}).
+
+%TODO Analogies? (e.g. free abelian group)
+
+As a first step, we discuss how to interpret the syntax of simply typed $\lambda$-calculus presented in Section~\ref{sec:stlc2-syntax} in a $\lambda$-domain $\cat{C}$. To do this, we need to choose an interpretation $J : \Basetypes \to \STy[\cat{C}]$ for the base types. Then, we can extend the interpretation $J$ to an interpretation $\cint[J]{-}$ of the syntax of $\lambda$-calculus by structural recursion on the syntax. The definitions are entirely straightforward: we simply replace each syntactic operation by the corresponding semantic operation. We spell out the interpretation in steps for the different kinds of syntactic entities.
+
+\begin{defn}[Interpretation of $\lambda$-calculus in a $\lambda$-domain] \label{def:stlc2-int}
+Let $\cat{C}$ be a $\lambda$-domain and let $J : \Basetypes \to \STy[\cat{C}]$ be an interpretation for the base types. The \emph{interpretation of $\lambda$-calculus in $\cat{C}$ with respect to $J$} is defined as follows.
+%TODO drop the J (and superscripts) to make it less verbose?
+\begin{enum}
+\item The interpretation of types is defined by structural recursion on types:
+\begin{align*}
+\cintty[J]{-} &: \sTy \to \STy[\cat{C}] \\
+\cintty[J]{\beta} &= J(\beta) \quad(\beta \in \Basetypes) \\
+\cintty[J]{\functy{\sigma}{\tau}} &= \Sfuncty{\cintty[J]{\sigma}}{\cintty[J]{\tau}}
+\end{align*}
+
+\item The interpretation of contexts is defined by structural recursion on lists:
+\begin{align*}
+\cintcon[J]{-} &: \sCon \to \SCon[\cat{C}] \\
+\cintcon[J]{\sempcon} &= \Sempcon[\cat{C}] \\
+\cintcon[J]{\sextcon{\Gamma}{\sigma}}
+    &= \Sextcon{\cintcon[J]{\Gamma}}{\cintty[J]{\sigma}}
+\end{align*}
+
+\item The interpretation of terms and substitutions is defined by mutual recursion on the generating rules for terms and substitutions (see Figure~\ref{fig:stlc2-terms-subs}).
+\begin{align*}
+\cinttm[J]{-} &: \sTm{\Gamma}{\sigma} \to \STm[\cintcon[J]{\Gamma}]{\cintty[J]{\sigma}}[\cat{C}] \\
+\cintsub[J]{-} &: \sSub{\Delta}{\Gamma} \to \SSub{\cintcon[J]{\Delta}}{\cintcon[J]{\Gamma}}[\cat{C}] \\
+\\
+\cinttm[J]{\vz[\Gamma][\sigma]} &= \Sq[\cintcon[J]{\Gamma}][\cintty[J]{\sigma}] \\
+\cinttm[J]{\app{t}{u}} &= \Sapp{\cinttm[J]{t}}{\cinttm[J]{u}} \\
+\cinttm[J]{\slam{A}{t}} &= \Slam{\cintty[J]{A}}{\cinttm[J]{t}} \\
+\cinttm[J]{\ssubst{t}{\gamma}} &= \Ssubst{\cinttm[J]{t}}{\cintsub[J]{\gamma}} \\
+\\
+\cintsub[J]{\sempsub[\Gamma]} &= \Sempsub[\cintcon[J]{\Gamma}] \\
+\cintsub[J]{\sextsub{\gamma}{t}} &= \Sextsub{\cintsub[J]{\gamma}}{\cinttm[J]{t}} \\
+\cintsub[J]{\sidsub[\Gamma]} &= \Sidsub[\cintcon[J]{\Gamma}] \\
+\cintsub[J]{\scompsub{\gamma}{\delta}} &=
+    \Scompsub{\cintsub[J]{\gamma}}{\cintsub[J]{\delta}} \\
+\cintsub[J]{\spsub[\Gamma][\sigma]} &=
+    \Spsub[\cintcon[J]{\Gamma}][\cintty[J]{\sigma}]
+\end{align*}
+\end{enum}
+\end{defn}
+
+To improve readability, we often drop the superscripts from $\cintty[J]{-}$, $\cintcon[J]{-}$, etc. and write $\cint[J]{-}$ uniformly for all the interpretation functions.
+
+An important property of the interpretation is that convertible terms and substitutions are mapped to the same semantic object. This property is referred to as \textit{soundness}.
+
+\begin{thm}[Soundness of the interpretation] \label{thm:cat-soundness}
+Let $\cat{C}$ be a $\lambda$-domain and $J : \Basetypes \to \STy[\cat{C}]$ an interpretation for the base types.
+\begin{enum}
+\item For all $t$ and $t'$, if $\sconvtm{t}{t'}{\Gamma}{\sigma}$, then $\cint[J]{t} = \cint[J]{t'} \in \STm[\cint[J]{\Gamma}]{\cint[J]{\sigma}}[\cat{C}]$.
+\item For all $\gamma$ and $\gamma'$, if $\sconvsub{\gamma}{\gamma'}{\Delta}{\Gamma}$, then $\cint[J]{\gamma} = \cint[J]{\gamma'} \in \SSub{\cint[J]{\Delta}}{\cint[J]{\Gamma}}[\cat{C}]$.
+\end{enum}
+\begin{proof}
+Both statements are proved simultaneously by mutual induction on the derivation of $\sconvtm{t}{t'}{\Gamma}{\sigma}$, respectively $\sconvsub{\gamma}{\gamma'}{\Delta}{\Gamma}$.
+%TODO give an example case?
+We omit the unsurprising details.
+\end{proof}
+\end{thm}
+
+The next step is to define the \textit{syntactic $\lambda$-domain}. We do this in stages corresponding to the structural complexity of $\lambda$-domains. First, we define the so called \textit{syntactic category} (Definition~\ref{def:syn-cat}), which serves as the base category for the syntactic $\lambda$-domain. Next, we endow the syntactic category with the structure of an scwf to obtain the \textit{syntactic scwf} (Definition~\ref{def:syn-scwf}. Finally, we equip the syntactic scwf with the \textit{syntactic function-structure} resulting in the syntactic $\lambda$-domain (Definition~\ref{def:syn-ldom}).
+
+\begin{defn}[Syntactic category] \label{def:syn-cat}
+The \emph{syntactic category} $\syncat$ of $\lambda$-calculus is defined as follows.
+\begin{enum}
+    \item Its objects are syntactic contexts, i.e. lists of types.
+    
+    \item For $\Gamma, \Delta \in \syncat$, $\Hom[\syncat]{\Delta}{\Gamma}$ is the set of syntactic substitutions $\sSub{\Delta}{\Gamma}$ quotiented by the convertibility relation $\sconvrelsub{\Delta}{\Gamma}$. That is,
+    \[ \Hom[\syncat]{\Delta}{\Gamma} = \setof{[\gamma]}{\stypedsub{\gamma}{\Delta}{\Gamma}}, \]
+    where
+    \[ [\gamma] = \setof{\stypedsub{\gamma'}{\Delta}{\Gamma}}{\sconvsub{\gamma}{\gamma'}{\Delta}{\Gamma}} \]
+    denotes the equivalence class of $\stypedsub{\gamma}{\Delta}{\Gamma}$.
+    
+    \item Composition of substitutions is done on representatives of equivalences classes:
+    \[ \Scompsub{[\gamma]}{[\delta]}[\syncat] = [\scompsub{\gamma}{\delta}] \]
+    for $\stypedsub{\gamma}{\Delta}{\Gamma}$ and $\stypedsub{\delta}{\Theta}{\Delta}$. This operation is well-defined since, by the congruence rule \textsc{cong-comp} (Figure~\ref{fig:stlc2-equations}), if $\gamma'$ and $\delta'$ are also representatives of the equivalences classes $[\gamma]$ and $[\delta]$, respectively, then $[\scompsub{\gamma}{\delta}] = [\scompsub{\gamma'}{\delta'}]$.
+
+    \item The identity substitution of $\syncat$ on the context $\Gamma$ is the equivalence class of the syntactic identity substitution on $\Gamma$:
+    \[ \Sidsub[\Gamma][\syncat] = [\sidsub[\Gamma]] \]
+\end{enum}
+%TODO category axioms vs axioms of categories
+The category axioms are satisfied due to the associativity (\textsc{comp-assoc}) and identity (\textsc{id-l}, \textsc{id-r}) laws of the syntax (Figure~\ref{fig:stlc2-equations}).
+\end{defn}
+
+%TODO rephrase this paragraph to make it clearer?
+%TODO category axioms vs axioms of categories
+To summarize the construction of Definition~\ref{def:syn-cat}, the syntactic category $\syncat$ is obtained by using corresponding syntactic objects and operations for each component of the category. That is, contexts are syntactic contexts, substitutions are syntactic substitutions, etc. However, there is a subtlety involved for morphisms: instead of using the substitutions themselves, we quotient them by convertibility, thereby identifying convertible substitutions. Taking the quotient is necessary to satisfy the category axioms: without quotienting, they would only hold up to convertibility instead of equality.
+
+The downside of quotienting is that all operations defined on equivalence classes must be proved to be well-defined, that is, independent of the chosen representatives. In the syntactic category, this was ensured by the congruence law \textsc{cong-comp}. In the rest of this section, we omit such verifications, as they all follow immediately from one of the congruence rules (\textsc{cong-app}, \textsc{cong-lam}, \textsc{cong-subst}, \textsc{cong-ext}, \textsc{cong-comp} in Figure~\ref{fig:stlc2-equations}) for the syntax.
+
+\begin{defn}[Syntactic scwf] \label{def:syn-scwf}
+The \emph{syntactic scwf} has as base category the syntactic category $\syncat$. The remaining structure is defined as follows.
+\begin{enum}
+    \item The terminal object $\Sempcon[\syncat]$ is the empty list $\sempcon$ and the unique map $\Sempsub[\Gamma][\syncat] : \Gamma \to \sempcon$ is the equivalence class of the empty tuple $\sempsub[\Gamma]$. (Note that this equivalence class is a singleton set since $\sempsub[\Gamma]$ is the unique element of $\sSub{\Gamma}{\sempcon}$.)
+
+    \item The set $\STy[\syncat]$ is the set $\sTy$ of types of the simply typed $\lambda$-calculus.
+
+    \item Given $\sigma \in \sTy$, the presheaf $\STm{\sigma}[\syncat]$ is defined as follows. It sends a context $\Gamma$ to the set of syntactic terms $\sTm{\Gamma}{\sigma}$ quotiented by the convertibility relation $\sconvreltm{\Gamma}{\sigma}$, and it sends an equivalence class $[\gamma] : \Delta \to \Gamma$ of substitutions to the function
+    \[ \sTm{\Gamma}{\sigma}/\sconvreltm{\Gamma}{\sigma} \ \to\ 
+        \sTm{\Delta}{\sigma}/\sconvreltm{\Delta}{\sigma} \]
+    given by $[t] \mapsto [\ssubst{t}{\gamma}]$, where $\stypedsub{\gamma}{\Delta}{\Gamma}$ and $\stypedtm{t}{\Gamma}{\sigma}$. The presheaf axioms are satisfied due to the rules \textsc{subst-id} and \textsc{subst-comp} (Figure~\ref{fig:stlc2-equations}).
+
+    \item Context comprehension is given by context extension, and the operations on substitution are defined by the analogous operations on the syntax.
+\end{enum}
+\end{defn}
+
+\begin{defn}[Syntactic $\lambda$-domain] \label{def:syn-ldom}
+The \emph{syntactic function-structure} on the syntactic scwf $\syncat$ is defined as follows.
+\begin{enum}
+\item We define $\Sfuncty{\sigma}{\tau}[\syncat]$ to be $\functy{\sigma}{\tau}$.
+\item We define $\Sapp[\Gamma,\sigma,\tau]{[t]}{[u]}$ to be $[\app{t}{u}]$.
+\item Finally, we define $\Slam{\sigma}[\Gamma,\tau]{[t]}$ to be $[\slam{\sigma}{t}]$.
+\end{enum}
+The \emph{syntactic $\lambda$-domain} is the syntactic scwf $\syncat$ equipped with the syntactic function-structure.
+\end{defn}
+
+We are now ready to state the universal property of the syntactic $\lambda$-domain.
+
+\begin{thm} \label{thm:syncat-free-ldom}
+For every $\lambda$-domain $\cat{C}$ and function $J : \Basetypes \to \STy[\cat{C}]$, there is a unique morphism of $\lambda$-domains $\cint[J]{-}[\cat{C}] : \syncat \to \cat{C}$ such that $\cint[J]{\beta}[\cat{C}] = J(\beta)$ for all $\beta \in \Basetypes$.
+\begin{proof}
+The components of the desired morphism of $\lambda$-domains $\cint[J]{-}[\cat{C}]$ are given by the interpretation functions of Definition~\ref{def:stlc2-int}. These definitions on the equivalence classes of terms and substitutions are well-defined due to the soundness of the interpretation (Theorem~\ref{thm:cat-soundness}). The structure of $\lambda$-domains is preserved by the definition of $\cint[J]{-}[\cat{C}]$. Uniqueness of the morphism follows by induction on the syntax of the $\lambda$-calculus given in Section~\ref{sec:stlc2-syntax}.
+\end{proof}
+\end{thm}
+
+In categorical terms, the above theorem states that $\syncat$ is a free $\lambda$-domain over the set $\Basetypes$ of base types. We can rephrase the result in terms of initiality. For this, we introduce a category of models (Definition~\ref{def:cat-mod}) and show that there is a \textit{syntactic model} which is an initial object in this category.
+
+\begin{defn}[Model] \label{def:stlc2-mod}
+A \emph{model} of simply typed $\lambda$-calculus is a $\lambda$-domain $\cat{C}$ together with an interpretation function $J : \Basetypes \to \STy[\cat{C}]$ for the base types.
+\end{defn}
+
+\begin{defn}[Model morphism]
+Let $(\cat{C}, J)$ and $(\cat{D}, K)$ be models. A \emph{model morphism} from $(\cat{C}, J)$ to $(\cat{D}, K)$ is a morphism of $\lambda$-domains $F : \cat{C} \to \cat{D}$ such that $F(J(\beta)) = K(\beta)$ for all $\beta \in \Basetypes$.
+\end{defn}
+
+Obviously, the composite of model morphisms is a model morphism, and the identity morphism on each $\lambda$-domain is a model morphism. Hence:
+
+\begin{defn} \label{def:cat-mod}
+Models and model morphisms form a category $\Mod$.
+\end{defn}
+
+\begin{defn} \label{def:syn-mod}
+\begin{enum}
+\item The \emph{canonical interpretation} $\canint : \Basetypes \to \STy[\syncat]$ of base types is the inclusion of $\Basetypes$ into $\sTy$.
+\item The \emph{syntactic model} is the syntactic $\lambda$-domain $\syncat$ together with the canonical interpretation $\canint$ of base types.
+\end{enum}
+\end{defn}
+
+\begin{thm} \label{thm:syn-mod-init}
+The syntactic model $(\syncat, \canint)$ is an initial object in $\Mod$.
+\begin{proof}
+This theorem is a rephrasing of Theorem~\ref{thm:syncat-free-ldom}.
+\end{proof}
+\end{thm}
+
+%TODO Remark: Initiality vs biinitiality?
+
+\subsection{Semantics in cartesian closed categories}
+
+In this section, we show that cartesian closed categories provide a wide range of models for the simply typed $\lambda$-calculus. Instead of defining the interpretation directly, we use the framework of the previous section.
+
+\begin{prop} \label{prop:ccc-to-ldom}
+We have a functor $S : \CCC \to \Ldom$.
+\begin{proof}
+We only discuss the object part of the functor. Given a CCC $\cat{C}$, we let $S(\cat{C})$ be the $\lambda$-domain defined as follows:
+\begin{enum}
+    \item Its base category is $\cat{C}$.
+    \item Types are objects of $\cat{C}$.
+    \item Terms $\STm[\Gamma]{A}$ are morphisms $\Gamma \to A$ in $\cat{C}$. Substitution in terms is given by precomposition of morphisms.
+    \item Context comprehension is given by the categorical product in $\cat{C}$.
+    \item The function type $\Sfuncty{A}{B}$ is the exponential $\cexp{A}{B}$ in $\cat{C}$. The operation $\Slam{A}[\Gamma,B]{-}$ sends a term $\cprod{\Gamma}{A} \to B$ to its exponential transpose. Finally, the operation $\Sapp[\Gamma,A,B]{}{}$ maps the pair $(t : \Gamma \to (\cexp{A}{B}), u : \Gamma \to A)$ to $\mev \circ \mpair{t}{u} : \Gamma \to B$. \qedhere
+\end{enum}
+\end{proof}
+\end{prop}
+
+\begin{cor}[Interpretation of $\lambda$-calculus in a CCC]
+Let $\cat{C}$ be a CCC and let $J : \Basetypes \to \Ob{\cat{C}}$ be an interpretation for the base types. The interpretation of $\lambda$-calculus in $\cat{C}$ with respect to $J$ is given by the following clauses.
+%TODO drop the superscripts and use overloaded notation everywhere?
+\begin{enum}
+\item Types:
+\begin{align*}
+\cintty[J]{-} &: \sTy \to \Ob{\cat{C}} \\
+\cint[J]{\beta} &= J(\beta) \quad(\beta \in \Basetypes) \\
+\cint[J]{\functy{\sigma}{\tau}} &= \cexp{\cint[J]{\sigma}}{\cint[J]{\tau}}
+\end{align*}
+
+\item Contexts:
+\begin{align*}
+\cintcon[J]{-} &: \sCon \to \Ob{\cat{C}} \\
+\cint[J]{\sempcon} &= \1[\cat{C}] \\
+\cint[J]{\sextcon{\Gamma}{\sigma}} &= \cprod{\cint[J]{\Gamma}}{\cint[J]{\sigma}}
+\end{align*}
+
+\item Terms and substitutions:
+\begin{align*}
+\cinttm[J]{-} &: \sTm{\Gamma}{\sigma} \to \Hom[\cat{C}]{\cint[J]{\Gamma}}{\cint[J]{\sigma}} \\
+\cintsub[J]{-} &: \sSub{\Delta}{\Gamma} \to \Hom[\cat{C}]{\cint[J]{\Delta}}{\cint[J]{\Gamma}} \\
+\\
+\cint[J]{\vz[\Gamma][\sigma]} &= \msnd[\cint[J]{\Gamma}, \cint[J]{\sigma}] \\
+\cint[J]{\app{t}{u}} &= \mev \circ \mpair{\cint[J]{t}}{\cint[J]{u}} \\
+\cint[J]{\slam{A}{t}} &= \mcurry{\cint[J]{t}} \\
+\cint[J]{\ssubst{t}{\gamma}} &= \cint[J]{t} \circ \cint[J]{\gamma} \\
+\\
+\cint[J]{\sempsub[\Gamma]} &= \mterm[\cint[J]{\Gamma}] \\
+\cint[J]{\sextsub{\gamma}{t}} &= \mpair{\cint[J]{\gamma}}{\cint[J]{t}} \\
+\cint[J]{\sidsub[\Gamma]} &= \id[\cint[J]{\Gamma}] \\
+\cint[J]{\scompsub{\gamma}{\delta}} &= \cint[J]{\gamma} \circ \cint[J]{\delta} \\
+\cint[J]{\spsub[\Gamma][\sigma]} &= \mfst[\cint[J]{\Gamma}, \cint[J]{\sigma}]
+\end{align*}
+\end{enum}
+\begin{proof}
+These clauses arise from the interpretation morphism $\cint[J]{-}[S(\cat{C})] : \syncat \to S(\cat{C})$.
+\end{proof}
+\end{cor}
+
+\begin{comment}
+\begin{defn} \label{def:scwf-from-products}
+Any small cartesian category $\cat{C}$ gives rise to an scwf as follows:
+\begin{items}
+    \item The base category is $\cat{C}$ itself.
+    \item The types are the objects of $\cat{C}$.
+    \item For any object $A$, the terms of type $A$ are morphisms with codomain $A$, that is $\name{Tm}(-, A) = \cat{C}(-, A)$.
+    \item Context comprehension is given by products. More precisely, $\Sextcon{\Gamma}{A}$ is the product $\cprod{\Gamma}{A}$, $p : \cprod{\Gamma}{A} \to \Gamma$ and $q : \cprod{\Gamma}{A} \to A$ are the projections, and $\Sextsub{-}{-}$ is given by the universal property of the product.
+\end{items}
+
+%TODO define cartesian categories and cartesian functors?
+This construction extends to a functor $L : \CC \to \Scwf$: a strict cartesian functor $F : \cat{C} \to \cat{D}$ gives rise to a strict scwf-morphism $LF : L\cat{C} \to L\cat{D}$ all whose components identical to either the action on objects or morphisms of $F$. The preservation of products ensures that context comprehension is preserved.
+\end{defn}
+
+\begin{defn} \label{def:scwffun-from-ccc}
+We extend Definition \ref{def:scwf-from-products} and define an scwf with function-structure from a cartesian closed category. We use the exponentials in $\cat{C}$ to define a function-structure the scwf. Concretely, $A \funcstruct B$ is given by the exponential $\cexp{A}{B}$. If $t : \cprod{\Gamma}{A} \to B$, then $\lambda_{\Gamma, A, B}(t) : \Gamma \to \cexp{A}{B}$ is the exponential transpose of $t$. For $t : \Gamma \to \cexp{A}{B}$ and $u : \Gamma \to A$, $\name{app}$ is defined as
+\[ \name{app}_{\Gamma, A, B}(t, u) = \mev[\Gamma,A] \circ \Sextsub{t}{u} \]
+
+Similarly to Definition \ref{def:scwf-from-products}, this construction extends to a functor $L : \CCC \to \Scwffun$, since if $F : \cat{C} \to \cat{D}$ preserves exponentials, then $LF : L\cat{C} \to \cat{D}$ preserves the function-structure.
+\end{defn}
+
+\end{comment}

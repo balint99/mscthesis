@@ -1,0 +1,661 @@
+Normalization refers to the process of finding a normal form for a given term. Traditionally, normalization and the notion of normal form have been defined in the context of \textit{term rewrite systems}. A term rewrite system is given by a set of terms and a set of rewrite rules, also called reduction rules. In this context, a normal form is a term in which no reductions are possible, and normalizing a term consists of applying the rewrite rules repeatedly until a normal form is reached.
+
+There is a computational reading of this process: terms represent programs, and applying rewrite rules corresponds to running a program. The execution is finished when no more reductions are possible, in which case the final term represents the value of the program. Thus, normal forms correspond to values that a program can output, and normalization corresponds to execution of programs. In particular, in the (simply typed) $\lambda$-calculus, the most important rewrite rule is $\beta$-reduction (the rule \textsc{beta} applied from left to right).
+
+%TODO too many i.e.-s
+An interesting question to ask about a term rewrite system is whether every term can be normalized, i.e. whether every term can be reduced to a normal form. A rewrite system in which this is possible is said to satisfy the \textit{weak normalization property}. There is a stronger property known as \textit{strong normalization} which states that every possible reduction path is finite, i.e. no infinite reductions are possible.
+
+In a programming language that satisfies the strong normalization property, any sequence of execution steps will eventually lead to a final result, i.e. no program can run forever. In programming language terminology, we say that the programming language is \textit{terminating}: all programs are guaranteed to terminate and return a result. In contrast, if a language only satisfies weak normalization, then we only know that there is \textit{some} execution path that leads to a result, but not necessarily that each of them does. However, if evaluation in the language is deterministic (that is, there is at most one possible execution step at each stage), then this property already implies that the language is terminating. Thus, weak normalization can still be a useful property.
+
+In a reduction free setting, we cannot formalize the strong normalization property. However, the weak normalization property still makes sense if reduction is replaced by convertibility. The property then states that every term has a normal form (see Definition~\ref{def:has-normal-form}). Fiore \cite{fiore:2002:ppdp, fiore:2022:mscs} calls this the \textit{extensional normalization problem}. Furthermore, it is convenient to characterize normal forms syntactically without reference to any reduction rules. This was done in Definition~\ref{def:normal-forms} for long $\beta\eta$-normal forms.
+
+For practical purposes, the weak normalization property is not sufficient. Instead, we need an effective procedure for determining the normal form of a term, that is, a function that maps terms to their normal forms. Fiore \cite{fiore:2002:ppdp, fiore:2022:mscs} calls this the \textit{intensional normalization problem}. Such a normalization function can then be used for example to decide the convertibility of two terms (Corollary~\ref{cor:conv-dec}). This is interesting from a logical point of view: the simply typed $\lambda$-calculus can be viewed as an equational theory, and thus the validity of formulas in this theory is decidable.
+
+%TODO who actually invented the method, Gödel or Tait?
+In Section~\ref{sec:weak-norm}, we prove weak normalization for the simply typed $\lambda$-calculus using the method of \textit{computability predicates} invented by Tait \cite{tait:1967:jsl} and Gödel \cite{godel1958}. We then provide an analysis of this proof in terms of the notion of \textit{logical relation} introduced by Statman \cite{statman:1985:ic}, which is a generalization of Tait's predicates.
+
+In Section~\ref{sec:nbe}, we consider \textit{normalization by evaluation}, a technique invented by Berger and Schwichtenberg \cite{DBLP:conf/lics/BergerS91}, providing a solution for the intensional normalization problem. Normalization by evaluation lies on the observation that normalization is essentially evaluation for open terms. However, instead of an operational approach, it employs denotational semantics for evaluation, thereby bypassing reduction. Hence, normalization of a term may be implemented by evaluating it in a context where the free variables are mapped to themselves, and then turning the semantic object back into a normal form.
+
+%TODO what to say, where to put it?
+There is a close analogy between Tait's proof and normalization by evaluation. In fact, Berger showed \cite{berger:1993:tlca, berger:2006:sl} that a version of normalization by evaluation can be obtained from a Tait-like proof of strong normalization using a mechanized procedure known as \textit{program extraction}. In Section~\ref{sec:nbe-alg}, we highlight the correspondences between the two proofs.
+
+\section{Weak normalization} \label{sec:weak-norm}
+
+In this section, we prove the following theorem:
+
+\begin{thm}[Weak normalization] \label{thm:weak-norm}
+All terms $\typedtm{t}{\sigma}$ have a normal form.
+\end{thm}
+
+A naive attempt of a proof of this theorem would try to prove the statement directly by induction on terms. However, this approach gets stuck at the application case: we cannot prove that $\app{t}{u}$ has a normal form if $t$ and $u$ have one. A counterexample in the untyped $\lambda$-calculus is the term $(\lambda x.\; x\; x)\; (\lambda x.\; x\; x)$.
+
+%TODO explain what Gödel wanted to show using computable functionals?
+In Section~\ref{sec:Tait-proof}, we present a proof of Theorem~\ref{thm:weak-norm} based on the idea of a \textit{convertible term} by Tait \cite{tait:1967:jsl}, who used it to prove normalization of terms in Gödel's system T \cite{godel1958}. Tait's method itself was inspired by Gödel's notion of a \textit{computable/reckonable functional} (German: \textit{berechenbare Funktion}) \cite{godel1958}.
+
+%TODO reference for induction loading?
+The essential idea of the proof is that we define when a term is convertible by induction on the type of the term (Definition~\ref{def:conv-pred}). A term of base type is convertible iff it has a normal form; a term of function type is convertible iff it maps convertible inputs to convertible outputs. Now proving that every term is convertible is straightforward using induction on terms (Lemma~\ref{lem:fundamental-lem-norm}), solving the issue of the naive attempt. Furthermore, every convertible term has a normal form (Lemma~\ref{lem:computability-normal-forms}); hence, the theorem follows. On a methodological level, the proof considers a stronger property (convertibility) in order to provide a stronger induction hypothesis, thus making the induction go through. This method is sometimes referred to as \textit{induction loading}.
+
+%TODO add references to more applications? (e.g. canonicity, parametricity, normalization/termination, memory safety)
+In Section~\ref{sec:logical-relations}, we introduce the notion of \textit{logical predicate}, which is a special case of the notion of \textit{logical relation} introduced by Statman \cite{statman:1985:ic}. Precursors of logical relations and extensions thereof have been widely used in the literature to prove (among other things) definability results about the simply typed $\lambda$-calculus \cite{plotkin:1980, statman:1985:ic, jung:1993:tlca, DBLP:conf/tlca/FioreS99}. The point of logical predicates is that they generalize the core idea behind Tait's convertibility predicate, namely, that the property we wish to prove should be defined by induction on the type structure. We also prove a generalization of Lemma~\ref{lem:fundamental-lem-norm} (Theorem~\ref{thm:fundamental-thm-log-rel}), dubbed the \textit{Fundamental Theorem of Logical Relations} by Statman \cite{statman:1985:ic}.
+
+%TODO abstract away sounds weird perhaps
+Furthermore, we introduce the notion of \textit{bilogical predicate} (Definition~\ref{def:bilog-rel}) and prove a corresponding fundamental theorem (Theorem~\ref{thm:fundamental-thm-bilog-rel}). The fundamental theorem abstracts away the ingredients of the proof in Section~\ref{sec:Tait-proof}. This development was inspired by Fiore's Basic Lemma \cite{fiore:2002:ppdp, fiore:2022:mscs} and it is essentially an instantiation of his result phrased in a simpler framework.
+
+Finally, in Section~\ref{sec:log-pred-proof}, we give a very short proof of Theorem~\ref{thm:weak-norm} employing the results of Section~\ref{sec:logical-relations}. This proof is essentially a rephrasing of the proof in Section~\ref{sec:Tait-proof}.
+
+\subsection{``Syntactic" proof} \label{sec:Tait-proof}
+%TODO better title
+
+\begin{defn}
+Let $T \subs \Tm[\sigma]$. We define
+\[ \convset{T} = \setof{\typedtm{t}{\sigma}}{\exists u \in T. \conv{t}{u}{\sigma}}. \]
+\end{defn}
+
+That is, $\convset{T}$ is the set of terms of type $\sigma$ that are convertible to some term in $T$. Note that $\convset{\Nf[\sigma]}$ is the set of terms of type $\sigma$ that have a normal form.
+
+\begin{defn}[Convertibility predicate] \label{def:conv-pred}
+We define a family of predicates $R_\sigma \subs \Tm[\sigma]$ on $\lambda$-terms by recursion on types:
+\begin{align*}
+R_\beta &= \convset{\Nf[\beta]} \quad (\beta \in \Basetypes) \\
+R_{\functy{\sigma}{\tau}} &= \setof{\typedtm{t}{\functy{\sigma}{\tau}}}
+    {\forall u \in R_\sigma.\ \app{t}{u} \in R_\tau}
+\end{align*}
+\end{defn}
+
+\begin{lem} \label{lem:conversion-computability}
+If $\conv{t}{t'}{\sigma}$ and $t' \in R_\sigma$, then $t \in R_\sigma$.
+\begin{proof}
+By induction on $\sigma$:
+\begin{items}
+\item Case $\beta \in \Basetypes$:
+Suppose $t' \in R_\beta$, i.e. there is a normal form $\typedtm{n}{\beta}$ such that $\conv{t'}{n}{\beta}$. Since $\conv{t}{t'}{\beta}$, transitivity implies $\conv{t}{n}{\beta}$. Hence, $t \in \convset{\Nf[\beta]} = R_\beta$.
+
+\item Case $\functy{\sigma}{\tau}$:
+Suppose $t' \in R_{\functy{\sigma}{\tau}}$, and let $u \in R_\sigma$. Then $\app{t'}{u} \in R_\tau$. Since $\conv{t}{t'}{\functy{\sigma}{\tau}}$, we derive $\conv{\app{t}{u}}{\app{t'}{u}}{\tau}$. Thus, we can apply the induction hypothesis to conclude that $\app{t}{u} \in R_\tau$. Hence, $t \in R_{\functy{\sigma}{\tau}}$. \qedhere
+\end{items}
+\end{proof}
+\end{lem}
+
+\begin{lem}[Fundamental Lemma] \label{lem:fundamental-lem-norm}
+Let $\typedtm{t}{\sigma}$ and $\gamma \in \Sub$ such that $\FV{t} \subs \dom{\gamma}$. If $\gamma(x) \in R_\tau$ for all $x \in \FV[\tau]{t}$, then $\subst{t}{\gamma} \in R_\sigma$.
+\begin{proof}
+By induction on $t$:
+\begin{items}
+\item Case $x$:
+$\subst{x}{\gamma} = \gamma(x) \in R_\tau$ by assumption.
+\item Case $\app{t}{u}$:
+We have $\subst{t}{\gamma} \in R_{\functy{\sigma}{\tau}}$ and $\subst{u}{\gamma} \in R_\sigma$ by the induction hypotheses. Thus, $\subst{(\app{t}{u})}{\gamma} = \app{\subst{t}{\gamma}}{\subst{u}{\gamma}} \in R_\tau$ by the definition or $R_{\functy{\sigma}{\tau}}$.
+\item Case $\lamv{x}{\sigma}{t}$:
+We need to show that $\subst{(\lamv{x}{\sigma}{t})}{\gamma} = \lamv{x}{\sigma}{\subst{t}{(\updsub{\gamma}{x}{x})}} \in R_{\functy{\sigma}{\tau}}$. Let $u \in R_\sigma$. Then $\updsub{\gamma}{x}{u}$ satisfies the conditions of the lemma, and hence we can apply the induction hypothesis to obtain $\subst{t}{(\updsub{\gamma}{x}{u})} \in R_\tau$. Since $\conv{\app{(\lamv{x}{\sigma}{\subst{t}{(\updsub{\gamma}{x}{x})}})}{u}}{\subst{t}{(\updsub{\gamma}{x}{u})}}{\tau}$, we infer $\app{(\lamv{x}{\sigma}{\subst{t}{(\updsub{\gamma}{x}{x})}})}{u} \in R_\tau$ by Lemma~\ref{lem:conversion-computability}. \qedhere
+\end{items}
+\end{proof}
+\end{lem}
+
+\begin{lem} \label{lem:computability-normal-forms}
+The following two statements hold for all types $\sigma$:
+\begin{enum}
+\item $R_\sigma \subs \convset{\Nf[\sigma]}$;
+\item $\convset{\Ne[\sigma]} \subs R_\sigma$.
+\end{enum}
+\begin{proof}
+We prove both statements simultaneously by induction on $\sigma$.
+\begin{items}
+\item Case $\beta \in \Basetypes$: (i) holds by definition. (ii) holds since $\Ne[\beta] \subs \Nf[\beta]$, and hence $\convset{\Ne[\beta]} \subs \convset{\Nf[\beta]}$.
+
+\item Case $\functy{\sigma}{\tau}$: For (i), let $t \in R_{\functy{\sigma}{\tau}}$ and let $\typedvar{x}{\sigma}$ such that $x \notin \FV{t}$. Since $\conv{x}{x}{\sigma}$ and $x \in \Ne[\sigma]$, we have $x \in \convset{\Ne[\sigma]}$. Thus, by the induction hypothesis for (ii), we get $x \in R_\sigma$. By the definition of $R_{\functy{\sigma}{\tau}}$, this implies $\app{t}{x} \in R_\tau$. Applying the induction hypothesis for (i), we get that $\app{t}{x} \in \convset{\Nf[\tau]}$, and hence there is a normal form $\typedtm{n}{\tau}$ such that $\conv{\app{t}{x}}{n}{\tau}$. Using \textsc{cong-lam} and \textsc{eta}, we derive $\conv{t}{\lamv{x}{\sigma}{n}}{\functy{\sigma}{\tau}}$. Since $\lamv{x}{\sigma}{n}$ is a normal form, this means $t \in \convset{\Nf[\functy{\sigma}{\tau}]}$, as desired.
+
+For (ii), suppose $t \in \convset{\Ne[\functy{\sigma}{\tau}]}$, i.e. there is a neutral term $\typedtm{m}{\functy{\sigma}{\tau}}$ such that $\conv{t}{m}{\functy{\sigma}{\tau}}$. To prove $t \in R_{\functy{\sigma}{\tau}}$, we need to show that $\app{t}{u} \in R_\tau$ for all $u \in R_\sigma$. If $u \in R_\sigma$, then the induction hypothesis for (i) implies that there is a normal form $\typedtm{n}{\sigma}$ such that $\conv{u}{n}{\sigma}$. Using \textsc{cong-app}, we derive $\conv{\app{t}{u}}{\app{m}{n}}{\tau}$. Since $\app{m}{n}$ is a neutral term, this means $\app{t}{u} \in \convset{\Ne[\tau]}$. Then, by the induction hypothesis for (ii), we conclude $\app{t}{u} \in R_\tau$. \qedhere
+\end{items}
+\end{proof}
+\end{lem}
+
+\begin{proof}[Proof of Theorem~\ref{thm:weak-norm}]
+Let $\idsub$ be the identity substitution on $\FV{t}$. By Lemma~\ref{lem:computability-normal-forms} (ii), $\idsub(x) = x \in R_\sigma$ for all $x \in \FV{t}$. Hence, $t = \subst{t}{(\idsub)} \in R_\sigma$ by Lemma~\ref{lem:fundamental-lem-norm}. By Lemma~\ref{lem:computability-normal-forms} (i), $t \in \convset{\Nf[\sigma]}$, which is what we wanted to prove.
+\end{proof}
+
+%TODO say something about how this subsection relates to Tait's original proof?
+
+\subsection{Logical predicates} \label{sec:logical-relations}
+
+%TODO: define n-ary logical relations? Prove the fundamental theorem for n-ary logical relations? This is necessary if we want to prove correctness of NbE using logical relations (it requires binary logical relations)
+
+\begin{defn}[Logical predicate]
+Let $\struct{A}$ be an applicative structure. A \emph{logical predicate $\struct{R}$ over $\struct{A}$} is a family of subsets $\scomp{\struct{R}}{\sigma} \subs \scomp{\struct{A}}{\sigma}$ indexed by types $\sigma$ such that for all $f \in \scomp{\struct{A}}{\functy{\sigma}{\tau}}$, we have
+\begin{equation} \label{eq:log-pred-functy}
+f \in \scomp{\struct{R}}{\functy{\sigma}{\tau}} \iff
+    \forall x \in R_\sigma.\ f x \in R_\tau.
+\end{equation}
+\end{defn}
+
+It is clear that (\ref{eq:log-pred-functy}) can be seen as the definition of the set $\scomp{\struct{R}}{\functy{\sigma}{\tau}}$. Thus, a logical predicate $\struct{R}$ over $\struct{A}$ is completely determined by the sets $\scomp{\struct{R}}{\beta}$ for $\beta \in \Basetypes$.
+
+\begin{defn}
+If $\struct{R}$ is a logical predicate over $\struct{A}$, then we say that an environment $\rho \in \Env[][\struct{A}]$ \emph{satisfies} the predicate $\struct{R}$ if $\rho(x) \in \scomp{\struct{R}}{\sigma}$ for all $x \in \dom{\rho} \cap \Var[\sigma]$.
+\end{defn}
+
+\begin{thm}[Fundamental Theorem of Logical Relations] \label{thm:fundamental-thm-log-rel}
+Suppose $\struct{A}$ is a model and $\struct{R}$ is a logical predicate over $\struct{A}$. Then for every term $\typedtm{t}{\sigma}$ and environment $\rho \in \Env[\FV{t}][\struct{A}]$ satisfying $\struct{R}$, we have $\sint[\struct{A}]{t}{\rho} \in \scomp{\struct{R}}{\sigma}$.
+\begin{proof}
+By induction on $t$:
+\begin{items}
+\item Case $\typedvar{x}{\tau}$:
+$\sint{x}{\rho} = \rho(x) \in \scomp{\struct{R}}{\tau}$ by assumption.
+\item Case $\app{t}{u}$:
+We have $\sint{t}{\rho} \in \scomp{\struct{R}}{\functy{\sigma}{\tau}}$ and $\sint{u}{\rho} \in \scomp{\struct{R}}{\sigma}$ by the induction hypotheses. Thus, $\sint{\app{t}{u}}{\rho} = \sint{t}{\rho} \sint{u}{\rho} \in \scomp{\struct{R}}{\tau}$ by the definition or $\scomp{\struct{R}}{\functy{\sigma}{\tau}}$.
+\item Case $\lamv{x}{\sigma}{t}$:
+Let $a \in \scomp{\struct{R}}{\sigma}$. Then $\updenv{\rho}{x}{a}$ satisfies $\struct{R}$, and hence we can apply the induction hypothesis to obtain $\sint{t}{\updenv{\rho}{x}{a}} \in \scomp{\struct{R}}{\tau}$. Thus, $\sint{\lamv{x}{\sigma}{t}}{\rho} a = \sint{t}{\updenv{\rho}{x}{a}} \in \scomp{\struct{R}}{\tau}$ for all $a \in \scomp{\struct{R}}{\sigma}$. Therefore, by definition, $\sint{\lamv{x}{\sigma}{t}}{\rho} \in \scomp{\struct{R}}{\functy{\sigma}{\tau}}$. \qedhere
+\end{items}
+\end{proof}
+\end{thm}
+
+%TODO say something about how logical predicates/relations relate to (sub)models?
+\begin{comment}
+\begin{defn}[Substructure]
+Let $\struct{A}$ be an applicative structure. Then a \emph{substructure of $\struct{A}$} is an applicative structure $\struct{S}$ such that $\scomp{\struct{S}}{\sigma} \subs \scomp{\struct{A}}{\sigma}$ for all types $\sigma$, and such that the application maps
+\[ \sapp[\sigma,\tau][\struct{S}] : \cartprod{\scomp{\struct{S}}{\functy{\sigma}{\tau}}}{\scomp{\struct{S}}{\sigma}} \to \scomp{\struct{S}}{\tau} \]
+are the restrictions of
+\[ \sapp[\sigma,\tau][\struct{A}] : \cartprod{\scomp{\struct{A}}{\functy{\sigma}{\tau}}}{\scomp{\struct{A}}{\sigma}} \to \scomp{\struct{A}}{\tau} \]
+for all pairs of types $\sigma, \tau$. If $\struct{S}$ is a substructure of $\struct{A}$, we write $\struct{S} \substruct \struct{A}$.
+\end{defn}
+
+\begin{defn}[Submodel]
+Let $\struct{A}$ be a model. Then a \emph{submodel of $\struct{A}$} is a substructure $\struct{S} \substruct \struct{A}$ such that $\struct{S}$ is a model and $\sint[\struct{S}]{t}{\rho} = \sint[\struct{A}]{t}{\rho}$ for all terms $\typedtm{t}{\sigma}$ and environments $\rho \in \Env[\FV{t}][\struct{S}]$.
+\end{defn}
+
+\begin{con} \label{con:log-pred-to-submodel}
+Suppose $\struct{A}$ a model and $\struct{R}$ is a logical predicate over $\struct{A}$. By the definition of $\scomp{\struct{R}}{\functy{\sigma}{\tau}}$, the application maps of $\struct{A}$ restrict to maps $\sapp[\sigma,\tau][\struct{R}] : \cartprod{\scomp{\struct{R}}{\functy{\sigma}{\tau}}}{\scomp{\struct{R}}{\sigma}} \to \scomp{\struct{R}}{\tau}$. This defines a substructure $\struct{R} \substruct \struct{A}$.
+\end{con}
+
+\begin{lem} \label{lem:log-pred-to-submodel}
+The substructure $\struct{R} \substruct \struct{A}$ in Construction \ref{con:log-pred-to-submodel} is a submodel.
+\begin{proof}
+\struct{R} is not extensional :((
+
+An environment for the applicative structure $\struct{R}$ is precisely an environment for $\struct{A}$ that satisfies the logical predicate $\struct{R}$. Hence, by the fundamental theorem (Theorem~\ref{thm:fundamental-thm-log-rel}), we have $\sint[\struct{A}]{t}{\rho} \in \scomp{\struct{R}}{\sigma}$ for all $\typedtm{t}{\sigma}$ and $\rho \in \Env[\FV{t}][\struct{R}]$. This shows that $\struct{R}$ is a model such that $\sint[\struct{R}]{t}{\rho} = \sint[\struct{A}]{t}{\rho}$ for all $t$ and $\rho$.
+\end{proof}
+\end{lem}
+
+\begin{lem} \label{lem:submodel-to-log-pred}
+
+\end{lem}
+
+\begin{prop}
+Suppose $\struct{A}$ is a model. Then there is a bijection between logical predicates over $\struct{A}$ and submodels of $\struct{A}$.
+\begin{proof}
+Corollary of lemmas \ref{lem:log-pred-to-submodel} and \ref{lem:submodel-to-log-pred}.
+\end{proof}
+\end{prop}
+\end{comment}
+
+%TODO: Come up with a better name for bilogical predicates?
+
+\begin{defn} \label{def:bilog-rel}
+Suppose $\struct{A}$ is an applicative structure. A \emph{bilogical predicate over $\struct{A}$} consists of two families of subsets $\scomp{\struct{Q}}{\sigma}, \scomp{\struct{S}}{\sigma} \subs \scomp{\struct{A}}{\sigma}$ indexed by types $\sigma$, satisfying the following conditions:
+\begin{enum}
+\item $\scomp{\struct{Q}}{\beta} \subs \scomp{\struct{S}}{\beta}$ for all $\beta \in \Basetypes$;
+\item $f \in \scomp{\struct{Q}}{\functy{\sigma}{\tau}}$ and $x \in \scomp{\struct{S}}{\sigma}$ implies $f x \in \scomp{\struct{Q}}{\tau}$;
+\item if $f x \in \scomp{\struct{S}}{\tau}$ for all $x \in \scomp{\struct{Q}}{\sigma}$, then $f \in \scomp{\struct{S}}{\functy{\sigma}{\tau}}$.
+\end{enum}
+\end{defn}
+
+\begin{defn}
+If $(\struct{Q}, \struct{S})$ is a bilogical predicate over $\struct{A}$, then we say that an environment $\rho \in \Env[][\struct{A}]$ \emph{satisfies} the predicate $(\struct{Q}, \struct{S})$ if $\rho(x) \in \scomp{\struct{Q}}{\sigma}$ for all $x \in \dom{\rho} \cap \Var[\sigma]$.
+\end{defn}
+
+%TODO split up statement of theorem into two parts: first is the lemma used in the proof (Q <= R <= S), second is the current statement. Or: the fundamental theorem is only the first part (Q <= R <= S), and the second part is a corollary of the theorem
+\begin{thm}[Fundamental Theorem of Bilogical Relations] \label{thm:fundamental-thm-bilog-rel}
+Suppose $\struct{A}$ is a model and $(\struct{Q}, \struct{S})$ is a logical predicate over $\struct{A}$. Then for every term $\typedtm{t}{\sigma}$ and environment $\rho \in \Env[\FV{t}][\struct{A}]$ which satisfies $(\struct{Q}, \struct{S})$, we have $\sint[\struct{A}]{t}{\rho} \in \scomp{\struct{S}}{\sigma}$.
+\begin{proof}
+Define the logical predicate $\struct{R}$ by $\scomp{\struct{R}}{\beta} = \scomp{\struct{S}}{\beta}$ for all $\beta \in \Basetypes$. We show that
+\begin{equation} \label{eq:bilog-pred-inclusions}
+\scomp{\struct{Q}}{\sigma} \subs \scomp{\struct{R}}{\sigma} \subs \scomp{\struct{S}}{\sigma}
+\end{equation}
+for all types $\sigma$. The proof proceeds by induction on $\sigma$.
+\begin{items}
+\item Case $\beta \in \Basetypes$: We have $\scomp{\struct{Q}}{\beta} \subs \scomp{\struct{R}}{\beta} = \scomp{\struct{S}}{\beta}$ by definition of $\struct{R}$ and condition (i) for bilogical predicates.
+
+\item Case $\functy{\sigma}{\tau}$: Let $f \in \scomp{\struct{Q}}{\functy{\sigma}{\tau}}$ and suppose $x \in \scomp{\struct{R}}{\sigma}$. By the induction hypothesis for $\sigma$, $x \in \scomp{\struct{S}}{\sigma}$, so condition (ii) for bilogical predicates implies $f x \in \scomp{\struct{Q}}{\tau}$. Therefore, by the induction hypothesis for $\tau$, $f x \in \scomp{\struct{R}}{\tau}$. Hence, $f x \in \scomp{\struct{R}}{\tau}$ for all $x \in \scomp{\struct{R}}{\sigma}$, and thus $f \in \scomp{\struct{R}}{\functy{\sigma}{\tau}}$ by definition of $\scomp{\struct{R}}{\functy{\sigma}{\tau}}$.
+
+Now let $f \in \scomp{\struct{R}}{\functy{\sigma}{\tau}}$ and suppose $x \in \scomp{\struct{Q}}{\sigma}$. By the induction hypothesis for $\sigma$, we have $x \in \scomp{\struct{R}}{\sigma}$, hence $f x \in \scomp{\struct{R}}{\tau}$. By the induction hypothesis for $\tau$, we get $f x \in \scomp{\struct{S}}{\tau}$. Hence, we have $f x \in \scomp{\struct{S}}{\tau}$ for all $x \in \scomp{\struct{Q}}{\sigma}$, so $f \in \scomp{\struct{S}}{\functy{\sigma}{\tau}}$ by condition (iii) for bilogical predicates.
+\end{items}
+This concludes the proof of (\ref{eq:bilog-pred-inclusions}). Now let $t$ and $\rho$ be as in the statement of the theorem. Since $\scomp{\struct{Q}}{\tau} \subs \scomp{\struct{R}}{\tau}$ for all types $\tau$, we have that $\rho$ satisfies $\struct{R}$. Hence, by the Fundamental theorem of logical relations (Theorem~\ref{thm:fundamental-thm-log-rel}), we get $\sint[\struct{A}]{t}{\rho} \in \scomp{\struct{R}}{\sigma} \subs \scomp{\struct{S}}{\sigma}$.
+\end{proof}
+\end{thm}
+
+%TODO say something about how this is a generalization of the proof in the previous section?
+
+\subsection{``Semantic" proof} \label{sec:log-pred-proof}
+%TODO better title
+%TODO this section is quite short, is that fine?
+
+\begin{lem} \label{lem:neutral-normal-bilog-pred}
+Let
+\[ \scomp{\struct{M}}{\sigma} = \setof{[m]}{m \in \Ne[\sigma]} \quad\text{and}\quad
+   \scomp{\struct{N}}{\sigma} = \setof{[n]}{n \in \Nf[\sigma]} \]
+for all $\sigma$.
+Then $(\struct{M}, \struct{N})$ is a bilogical predicate over $\tmmod$.
+\begin{proof}
+We verify the conditions of bilogical predicates.
+\begin{enum}
+\item $\scomp{\struct{M}}{\beta} \subs \scomp{\struct{N}}{\beta}$ by rule \textsc{shift}.
+
+\item Let $[m] \in \scomp{\struct{M}}{\functy{\sigma}{\tau}}$ and $[n] \in \scomp{\struct{N}}{\sigma}$, where $m \in \Ne[\functy{\sigma}{\tau}]$ and $n \in \Nf[\sigma]$. Then $\app{m}{n}$ by rule \textsc{app-ne}. Hence, $[m][n] = [\app{m}{n}] \in \scomp{\struct{M}}{\tau}$.
+
+\item Let $[t] \in \tmmod_{\functy{\sigma}{\tau}}$ such that $[t][m] \in \scomp{\struct{N}}{\tau}$ for all $[m] \in \scomp{\struct{M}}{\sigma}$. Then, in particular, $[t][x] = [\app{t}{x}] = [n]$ for some $n \in \Nf[\tau]$, where $x$ is a variable of type $\sigma$ such that $x \notin \FV{t}$. This means that $\conv{\app{t}{x}}{n}{\tau}$, and by rules \textsc{cong-lam} and \textsc{eta}, we derive $\conv{t}{\lamv{x}{\sigma}{n}}{\functy{\sigma}{\tau}}$. Hence, $[t] = [\lamv{x}{\sigma}{n}] \in \scomp{\struct{N}}{\functy{\sigma}{\tau}}$. \qedhere
+\end{enum}
+\end{proof}
+\end{lem}
+
+\begin{proof}[Alternative proof of Theorem~\ref{thm:weak-norm}]
+Let $(\struct{M}, \struct{N})$ be the bilogical predicate of Lemma~\ref{lem:neutral-normal-bilog-pred} and let $\idsub$ be the identity substitution on $\FV{t}$. Since $x \in \Ne[\sigma]$ for all $\typedvar{x}{\sigma}$ by rule \textsc{var-ne}, $[\idsub]$ satisfies $(\struct{M}, \struct{N})$. Applying the Fundamental theorem of bilogical relations (Theorem~\ref{thm:fundamental-thm-bilog-rel}), we get that $[t] = \sint[\tmmod]{t}{[\idsub]} \in \scomp{\struct{N}}{\sigma}$. This means that $[t] = [n]$ for some $n \in \Nf[\sigma]$, that is, $\conv{t}{n}{\sigma}$.
+\end{proof}
+
+\section{Normalization by evaluation} \label{sec:nbe}
+
+In this section, we define a \textit{normalization function} $\name{nf}_\sigma : \Tm[\sigma] \to \Nf[\sigma]$ that returns the normal form of the input term. It has to satisfy the following requirements:
+\begin{enum}
+\item $\conv{t}{\name{nf}_\sigma(t)}{\sigma}$ for all $\typedtm{t}{\sigma}$, and
+\item if $\conv{t}{u}{\sigma}$, then $\name{nf}_\sigma(t) = \name{nf}_\sigma(u)$.
+\end{enum}
+
+The normalization function $\name{nf}_\sigma$ will be constructed using the method of \textit{normalization by evaluation (NbE)} invented by Berger and Schwichtenberg \cite{DBLP:conf/lics/BergerS91}. Informally, NbE works by evaluating the term to be normalized in a suitable model, and then mapping the resulting semantic object back into syntax, producing a normal form evaluating to that object. Since we want the normal form to be convertible to the original term, the mapping provides an inverse to the evaluation function modulo convertibility. Hence, NbE can also be described as \textit{inverting the evaluation function} (\cite{DBLP:conf/lics/BergerS91}).
+
+To implement this idea, we have to solve some technicalities. By the definition of long $\beta\eta$-normal forms (Definition~\ref{def:normal-forms}), a normal form of function type has to be a $\lambda$-abstraction. Hence, when inverting a semantic value of type $\functy{\sigma}{\tau}$, we need to produce a term of the form $\lamv{x}{\sigma}{t}$ where $t \in \Nf[\tau]$. To avoid confusion of free and bound variables, the variable $x$ has to be fresh with respect to the whole computation.
+
+%TODO improve the explanation of the structure of the section? add more pointers into the content?
+We solve the problem by keeping track of free variables in order to generate fresh variables when necessary (see Notation~\ref{not:fresh-vars} and Definition~\ref{def:quote-unquote}). For this reason, in Section~\ref{sec:contexts}, we introduce \textit{contexts} whose role is to specify the free variables in a term. Thus, terms in this section are indexed by both types and contexts. Accordingly, in Section~\ref{sec:Kripke-models}, we introduce a notion of ``indexed" model, called a \textit{Kripke model} \cite{DBLP:journals/apal/MitchellM91}, to implement the algorithm. In Section~\ref{sec:nbe-alg}, we construct the algorithm (Definition~\ref{def:normalization-function}) and prove its correctness (Theorem~\ref{thm:norm-fun-correctness}).
+
+%TODO pay attention to chapter reference if structure is changed
+There are also alternative ways to solve the problem of generating fresh variable names, see for instance \cite{DBLP:conf/lics/BergerS91, dybjer:2002:appsem}. An advantage of our presentation of normalization by evaluation is that it is closer to the more abstract categorical view on normalization to be discussed in Chapter~\ref{chap:gluing}. However, it is also possible to implement NbE without referring to contexts and using simple Henkin models, see Dybjer and Filinski \cite{dybjer:2002:appsem}. An advantage of Dybjer and Filinski's approach is that their normalization algorithm is more efficient and easier to describe. We believe, however, that the algorithm presented here is mathematically more elegant.
+%TODO how good is this argument if we already rely on this fact in the proof?
+For instance, it gives a stronger specification to the normalization function, guaranteeing that its output is well-typed in the same context as its input.
+
+%TODO perhaps this should go in introduction? remark that not only NbE but other proofs can also be adapted for different syntactic presentations
+We remark that NbE can be implemented for all sorts of syntaxes for the simply typed $\lambda$-calculus. For instance, Kovács \cite{kovacs:2017:msc} formalized NbE for a well-scoped version of $\lambda$-calculus with de Bruijn indices in Agda.
+
+%TODO how to include this? I think it's a nice result. Maybe introduction/related work?
+\begin{comment}
+We can extract an NbE program from the Tait proof
+Say something about program extraction (not formally)
+Explain the computational content of lemmas in Tait proof by explicitly relating them to the NbE algorithm
+\end{comment}
+
+%TODO how to incorporate these thoughts?
+\begin{comment}
+Since normalization is achieved by using the evaluator of the metalogic to interpret terms in a model, the algorithm is termed "normalization by evaluation". Thus, in effect, the evaluator of the metalogic is what performs the normalization using its computational rules.
+
+Dybjer and Filinksi, page 3 of introduction
+Martin-Löf viewed this kind of normalization proof as a kind of normalization
+by intuitionistic model construction: he pointed out that equality (convertibility)
+in the object-language is modelled by “definitional equality” in the
+meta-language \cite{martin-lof:1975:equality}. Thus the method of normalization works because the
+simplification according to this definitional equality is carried out by the evaluator
+of the intuitionistic (!) meta-language: hence “normalization by evaluation”.
+If instead we work in a classical meta-language, then some extra work would be
+needed to implement the meta-language function in a programming language.
+\end{comment}
+
+\subsection{Adding contexts} \label{sec:contexts}
+
+\begin{defn}[Context]
+A \emph{context} $\Gamma$ is a finite set of variables (of any type), that is, an element of $\finpowset{\Var}$.
+\end{defn}
+
+\begin{notn} \label{not:contexts}
+\hfill \vspace{-6pt}
+\begin{items}
+    \item The set of contexts is denoted by $\Con$.
+    \item Let $\cTm{\Gamma}{\sigma} = \setof{t \in \Tm[\sigma]}{\FV{t} \subs \Gamma}$. Let $\cNe{\Gamma}{\sigma}$ and $\cNf{\Gamma}{\sigma}$ denote the subsets of neutral terms and normal forms, respectively, in $\cTm{\Gamma}{\sigma}$.
+    \item If $t \in \cTm{\Gamma}{\sigma}$, then we write $\ctypedtm{\Gamma}{t}{\sigma}$.
+    \item Similarly, if $t, u \in \cTm{\Gamma}{\sigma}$ and $\conv{t}{u}{\sigma}$, then we write $\ctypedconv{\Gamma}{t}{u}{\sigma}$.
+\end{items}
+\end{notn}
+
+We can give ``context-aware" derivation rules for terms, displayed in Figure~\ref{fig:stlc-terms-with-contexts}. The soundness of these rules is easily shown by unfolding the notations in Notation~\ref{not:contexts} and using Definition~\ref{def:stlc-terms} and Definition~\ref{def:free-and-bound-vars}. We write $(\typedvar{x}{\sigma}) \in \Gamma$ to mean $x \in \Gamma \cap \Var[\sigma]$, and we write $\Gamma, \typedvar{x}{\sigma}$ to mean $\Gamma \cup \singset[x]$ with the assumption that $\typedvar{x}{\sigma}$.
+
+\begin{figure}[ht]
+\begin{mathpar}
+\inferrule[var]
+    {(\typedvar{x}{\sigma}) \in \Gamma}
+    {\ctypedtm{\Gamma}{x}{\sigma}}
+\and
+\inferrule[app]
+    {\ctypedtm{\Gamma}{t}{\functy{\sigma}{\tau}} \and \ctypedtm{\Gamma}{u}{\sigma}}
+    {\ctypedtm{\Gamma}{\app{t}{u}}{\tau}}
+\and
+\inferrule[lam]
+    {\ctypedtm{\Gamma, \typedvar{x}{\sigma}}{t}{\tau}}
+    {\ctypedtm{\Gamma}{\lamv{x}{\sigma}{t}}{\functy{\sigma}{\tau}}}
+\end{mathpar}
+\caption{Terms of the simply typed $\lambda$-calculus with contexts}
+\label{fig:stlc-terms-with-contexts}
+\end{figure}
+
+With contexts, we can also give a more refined specification to the normalization function.
+
+%TODO add extra requirements?
+\begin{defn} \label{def:normalization-function-reqs}
+A \emph{normalization function} is a family of (computable) functions
+\[ \normf{\Gamma}{\sigma} : \cTm{\Gamma}{\sigma} \to \cNf{\Gamma}{\sigma} \]
+indexed by contexts $\Gamma$ and types $\sigma$, satisfying the following requirements:
+\begin{enum}
+    \item $\ctypedconv{\Gamma}{t}{\normf{\Gamma}{\sigma}(t)}{\sigma}$ for all $t \in \cTm{\Gamma}{\sigma}$, and
+    \item if $\ctypedconv{\Gamma}{t}{u}{\sigma}$, then $\normf{\Gamma}{\sigma}(t) = \normf{\Gamma}{\sigma}(u)$.
+    %\item $\normf{\Gamma}{\sigma}(n) = n$ for all $n \in \cNf{\Gamma}{\sigma}$, and
+    %\item if $\ctypedtm{\Gamma}{t}{\sigma}$ and $\Gamma \subs \Gamma'$, then $\normf{\Gamma}{\sigma}(t) = \normf{\Gamma'}{\sigma}(t)$.
+\end{enum}
+\end{defn}
+
+%TODO explain what the requirements mean, and give them names (completeness, soundness[, stability, naturality/compatibility]).
+
+\begin{rem}
+Let us explain why we put parentheses around the word \textit{computable} in Definition~\ref{def:normalization-function-reqs}. Constructing a program that implements a normalization function amounts to showing that it is computable. Hence, for a practical implementation of normalization, we need to make sure that the normalization function is computable.
+
+If we work in a constructive metatheory, then the condition is automatically fulfilled since the definitions directly give rise to a functional program. In a classical metatheory, some additional work could be necessary to implement the mathematical normalization function in a programming language and prove that it corresponds to the mathematical definition.
+\end{rem}
+
+\subsection{Kripke models} \label{sec:Kripke-models}
+%TODO add remarks about category theory?
+%TODO add some more explanatory text
+
+For a more thorough discussion of Kripke models, see Mitchell and Moggi \cite{DBLP:journals/apal/MitchellM91}.
+
+\begin{defn}[Kripke applicative structure]
+Let $(W, \le)$ be a poset. A \emph{Kripke applicative structure $\struct{A}$ over $W$} consists of
+\begin{items}
+    \item a family $\kscomp{\struct{A}}{\sigma}{w}$ of sets indexed by $\sigma \in \Ty$ and $w \in W$,
+    \item a family of \emph{transition maps} $\kstran[\sigma][w,w'] : \kscomp{\struct{A}}{\sigma}{w} \to \kscomp{\struct{A}}{\sigma}{w'}$ indexed by $\sigma \in \Ty$ and $w, w' \in W$ such that $w \le w'$, and
+    \item a family of \emph{application maps} $\ksapp[\sigma,\tau][w] : \cartprod{\kscomp{\struct{A}}{\functy{\sigma}{\tau}}{w}}{\kscomp{\struct{A}}{\sigma}{w}} \to \kscomp{\struct{A}}{\tau}{w}$
+\end{items}
+such that
+\begin{items}
+    \item $\kstran[\sigma][w,w]$ is the identity function on $\kscomp{\struct{A}}{\sigma}{w}$,
+    \item $\kstran[\sigma][w',w''] \circ \kstran[\sigma][w,w'] = \kstran[\sigma][w,w'']$, and
+    \item $\ksapp[\sigma,\tau][w'](\kstran[\functy{\sigma}{\tau}][w,w'](f), \kstran[\sigma][w,w'](x)) = \kstran[\tau][w,w'](\ksapp[\sigma,\tau][w](f, x))$
+\end{items}
+for all $\sigma, \tau \in \Ty$ and $w \le w' \le w''$.
+\end{defn}
+
+\begin{notn}
+As before, we may drop the types when they are understood from context, and we may write $fx$ for $\ksapp[\sigma,\tau][w](f, x)$.
+\end{notn}
+
+The poset $W$ is viewed as a set of \textit{possible worlds} partially ordered by accessibility. The transition map $\kstran[\sigma][w,w']$ allows us to transport an element at world $w$ to any ``future" world $w'$.
+
+%TODO explain the axioms?
+
+%TODO remark that the A_\sigma^w and i_\sigma^{w,w'} for fixed \sigma form a functor A_\sigma : W -> Set and that the application maps form a natural transformation A_{\functy{\sigma}{\tau}} \times A_\sigma \to A_\tau
+
+For the remainder of this section, we fix some poset $(W, \le)$.
+%TODO where to introduce this notation?
+The notation $\upset{w}$ stands for the the set $\setof{w' \in W}{w' \ge w}$.
+
+%TODO make this a remark to be able to refer to it?
+Similarly to standard applicative structures, every element $f \in \kscomp{\struct{A}}{\sigma}{w}$ determines a function $\kscomp{\struct{A}}{\sigma}{w} \to \kscomp{\struct{A}}{\tau}{w}$ sending $x$ to $f x$. With Kripke applicative structures, more is true: we can use the transition map $\kstran[\functy{\sigma}{\tau}][w,w']$ to view $f$ at world $w'$. Hence, there is a family of functions $\kscomp{\struct{A}}{\sigma}{w'} \to \kscomp{\struct{A}}{\tau}{w'}$ given by $x \mapsto \kstran[][w,w'](f) x$ for every $w' \ge w$, representing the applicative behaviour of $f$ in all future worlds.
+
+\begin{defn}[Extensional Kripke applicative structure]
+We say that a Kripke applicative structure $\struct{A}$ over $W$ is \emph{extensional} if the following holds for all $f, g \in \kscomp{\struct{A}}{\functy{\sigma}{\tau}}{w}$:
+\[ (\forall w' \ge w. \forall x \in \kscomp{\struct{A}}{\sigma}{w'}.
+        \kstran[][w,w'](f)x = \kstran[][w,w'](g)x)
+    \quad\text{implies}\quad f = g. \]
+\end{defn}
+
+\begin{rem}
+Compare this definition with Definition~\ref{def:ext-app-struct}. The property states that if the applicative behaviour of two elements is the same, then the elements must be identical.
+\end{rem}
+
+For the definition of a Kripke model, we need the following auxiliary notion.
+
+\begin{defn}[Global element]
+Let $\struct{A}$ be a Kripke applicative structure over $W$. A \emph{global element} $a$ of $\struct{A}$ of type $\sigma$ is a family $a_w \in \kscomp{\struct{A}}{\sigma}{w}$ indexed by $w \in W$ such that $\kstran[\sigma][w,w'](a_w) = a_w'$ for all $w \le w'$.
+\end{defn}
+
+%TODO remark about terminology? (global element in category theory)
+
+If $a$ is a global element of $\struct{A}$ of type $\sigma$, we write $a \in \kscomp{\struct{A}}{\sigma}{}$ to express this fact. Furthermore, we write $a_w$ for the component of $a$ at $w$.
+
+\begin{defn}[Kripke model]
+A \emph{Kripke model $\struct{A}$ over $W$} is an extensional Kripke applicative structure $\struct{A}$ over $W$ with distinguished global elements
+\[ K^{\sigma,\tau} \in \kscomp{\struct{A}}{\functy{\sigma}{\functy{\tau}{\sigma}}}{} \quad\text{and}\quad
+    S^{\sigma,\tau,\chi} \in \kscomp{\struct{A}}{\functy{(\functy{\sigma}{\functy{\tau}{\chi}})}{\functy{(\functy{\sigma}{\tau})}{\functy{\sigma}{\chi}}}}{} \]
+for every $\sigma, \tau, \chi \in \Ty$ such that
+\[ K^{\sigma,\tau}_w x y = x \quad\text{and}\quad
+    S^{\sigma,\tau,\chi}_w f g x = fx(gx) \]
+for all $x, y, f, g$ of the appropriate types.
+\end{defn}
+\begin{rem}
+This is an indexed version of Definition~\ref{def:comb-model}.
+\end{rem}
+
+%TODO ugly notation for families
+%TODO terminology: standard model over (X, j)?
+\begin{ex}[Standard model] \label{ex:standard-Kripke-model}
+Let $X = (\kscomp{X}{\beta}{w})_{\beta \in \Basetypes, w \in W}$ be a family of base sets and $j = (\kscomp{j}{\beta}{w,w'} : \kscomp{X}{\beta}{w} \to \kscomp{X}{\beta}{w'})_{\beta \in \Basetypes, w \le w'}$ a family of base transition maps such that
+\begin{items}
+    \item $\kscomp{j}{\beta}{w,w}$ is the identity on $\kscomp{X}{\beta}{w}$,
+    \item $\kscomp{j}{\beta}{w',w''} \circ \kscomp{j}{\beta}{w,w'} = \kscomp{j}{\beta}{w,w''}$
+\end{items}
+for all $\beta \in \Basetypes$ and $w \le w' \le w''$. We define the model $\kstdmod{X}{j}$, called the \emph{standard (Kripke) model}, as follows. The sets $\kscomp{\kstdmod{X}{j}}{\sigma}{w}$ and the transition maps $\kstran[\sigma][w,w']$ are defined simultaneously by recursion on types:
+\begin{align*}
+\kscomp{\kstdmod{X}{j}}{\beta}{w}
+    &= \kscomp{X}{\beta}{w} \quad (\beta \in \Basetypes) \\
+\kstran[\beta][w,w'](x) &= \kscomp{j}{\beta}{w,w'}(x) \quad (\beta \in \Basetypes) \\
+%TODO fix set builder notation
+\kscomp{\kstdmod{X}{j}}{\functy{\sigma}{\tau}}{w}
+    &= \setof{f \in \prod_{w' \ge w}{\funcset{\kscomp{\kstdmod{X}{j}}{\sigma}{w'}}{{\kscomp{\kstdmod{X}{j}}{\tau}{w'}}}}}{\forall w' \ge w. \forall w'' \ge w'. \forall x. f_{w''}(\kstran(x)) = \kstran(f_{w'}(x))} \\
+\kstran[\functy{\sigma}{\tau}][w,w']((f)_{w'' \ge w}) &= (f_{w''})_{w'' \ge w'}
+\end{align*}
+The application map $\ksapp[\sigma,\tau][w]$ is given by $(f, x) \mapsto f_w(x)$. The global elements $K$ and $S$ are defined as follows:
+\begin{align*}
+((K^{\sigma,\tau}_w)_{w'}(x))_{w''}(y) &= \kstran[][w',w''](x) \\
+(((S^{\sigma,\tau,\chi}_w)_{w'}(f))_{w''}(g))_{w'''}(x) &= (f_{w'''}(x))_{w'''}(g_{w'''}(x)).
+\end{align*}
+
+%TODO: verify that this is a model, or indicate how to do it.
+\end{ex}
+
+%TODO give motivation for the definition of standard Kripke model at function types (refer to the discussion about the applicative behaviour of elements at future worlds). Remark that categorically it is the exponential in the functor category [W, Set] and that the application is the evaluation map (just like for the standard Henkin model in the category Set)
+
+%TODO: Is it nice to do this?
+In what follows, $\struct{A}$ denotes a Kripke model over $W$.
+
+\begin{defn}[Environment]
+\hfill \vspace{-6pt}
+\begin{enum}
+\item An \emph{environment for $\struct{A}$} is a partial function $\rho : \cartprod{\Var}{W} \pto \bigcup_{\sigma \in \Ty, w \in W}{\kscomp{\struct{A}}{\sigma}{w}}$ with finite domain such that
+\begin{items}
+    \item if $\typedvar{x}{\sigma}$ and $(x, w) \in \dom{\rho}$, then $\rho(x, w) \in \kscomp{\struct{A}}{\sigma}{w}$, and
+    %TODO the second condition might be called compatibility
+    \item if $(x, w) \in \dom{\rho}$ and $w \le w'$, then $(x, w') \in \dom{\rho}$ and $\rho(x, w') = \kstran[][w,w'](\rho(x, w))$.
+\end{items}
+%TODO: Note: weird terminology? doesn't agree with Kripke model paper
+\item If $\Gamma \in \Con$ and $w \in W$, then an environment $\rho$ is said to \emph{satisfy $\Gamma$ at $w$}, notation $\ctypedenv{\rho}{\Gamma}{w}$, if $\cartprod{\Gamma}{\singset[w]} \subs \dom{\rho}$.
+\end{enum}
+\end{defn}
+\begin{rem}
+Compare with Definition~\ref{def:environment}.
+%TODO explain the comparison, e.g. that \rho(x, w) doesn't have to be defined for all w, and what satisfaction means
+\end{rem}
+
+%TODO (figure out and) remark what an environment is categorically
+
+\begin{notn}
+For an environment $\rho$, variable $\typedvar{x}{\sigma}$, and $a \in \kscomp{\struct{A}}{\sigma}{w}$, we write $\kupdenv{\rho}{x}{a}$ for the \emph{updated environment} with $\dom{\kupdenv{\rho}{x}{a}} = \dom{\rho} \cup \cartprod{\singset[x]}{\upset{w}}$ and such that
+\[ \kupdenv{\rho}{x}{a}(y, w') =
+    \begin{cases}
+    \rho(y, w') & \text{if } y \ne x \\
+    \kstran[][w,w'](a) & \text{if } y = x
+    \end{cases}. \]
+\end{notn}
+\begin{rem}
+Compare with Notation~\ref{not:environments}.
+%TODO explain the comparison?
+\end{rem}
+
+%TODO improve wording
+\begin{prop}[Interpretation of $\lambda$-calculus in a Kripke model] \label{prop:Kripke-model-int}
+There is an assignment
+\[ (t, \rho) \mapsto \ksint{t}{\rho}{w} \in \kscomp{\struct{A}}{\sigma}{w}
+    \quad \text{for }\ctypedtm{\Gamma}{t}{\sigma} \text{ and } \ctypedenv{\rho}{\Gamma}{w} \]
+such that the following equations are satisfied:
+\begin{align}
+\ksint{x}{\rho}{w} &= \rho(x, w) \\
+\ksint{\app{t}{u}}{\rho}{w} &= \ksint{t}{\rho}{w} \ksint{u}{\rho}{w} \\
+\kstran[][w,w'](\ksint{\lamv{x}{\sigma}{t}}{\rho}{w}) a &= \ksint{t}{\kupdenv{\rho}{x}{a}}{w'} \quad (a \in \kscomp{\struct{A}}{\sigma}{w'}, w' \ge w)
+\end{align}
+\end{prop}
+
+\begin{rem}
+Similarly to Henkin models, the clauses in Proposition~\ref{prop:Kripke-model-int} uniquely define the interpretation of a term $t$ in an environment $\rho$. Hence, it can be seen as the definition of interpretation. The well-definedness of the assignment is guaranteed by the existence of the interpretations for the combinators $K$ and $S$. Compare with Remark~\ref{rem:env-model-int-uniq}, Remark~\ref{rem:comb-model-KS-uniq}, and Proposition~\ref{prop:env-comb-mod-equiv}.
+\end{rem}
+
+\begin{ex}
+Specializing Proposition~\ref{prop:Kripke-model-int} to the standard Kripke model (Example~\ref{ex:standard-Kripke-model}), we get the following \textit{standard interpretation function}:
+\begin{align*}
+\ksint{x}{\rho}{w} &= \rho(x, w) \\
+\ksint{\app{t}{u}}{\rho}{w} &= (\ksint{t}{\rho}{w})_w(\ksint{u}{\rho}{w}) \\
+(\ksint{\lamv{x}{\sigma}{t}}{\rho}{w})_{w'}(a) &= \ksint{t}{\kupdenv{\rho}{x}{a}}{w'} \quad (a \in \kscomp{\struct{A}}{\sigma}{w'}, w' \ge w)
+\end{align*}
+\end{ex}
+
+\begin{defn}[Satisfaction]
+\hfill \vspace{-6pt}
+\begin{enum}
+\item Suppose $\ctypedtm{\Gamma}{t}{\sigma}$, $\ctypedtm{\Gamma}{u}{\sigma}$ and $\ctypedenv{\rho}{\Gamma}{w}$. We say that the equation $\ctypedconv{\Gamma}{t}{u}{\sigma}$ \emph{holds at $w$ and $\rho$ in $\struct{A}$}, written as $\cmodsat{\struct{A}, \rho}{\Gamma}{t}{u}{\sigma}$, if $\ksint{t}{\rho}{w} = \ksint{u}{\rho}{w}$.
+
+\item The model $\struct{A}$ \emph{satisfies} the equation $\ctypedconv{\Gamma}{t}{u}{\sigma}$, written as $\cmodsat{\struct{A}}{\Gamma}{t}{u}{\sigma}$, if $\cmodsat{\struct{A}, \rho}{\Gamma}{t}{u}{\sigma}$ for all $w \in W$ and $\ctypedenv{\rho}{\Gamma}{w}$.
+\end{enum}
+\end{defn}
+\begin{rem}
+Compare with Definition~\ref{def:satisfaction}.
+\end{rem}
+
+\begin{thm}[Soundness] \label{thm:kripke-soundness}
+For all $\ctypedtm{\Gamma}{t}{\sigma}$ and $\ctypedtm{\Gamma}{u}{\sigma}$, we have
+\[ \ctypedconv{\Gamma}{t}{u}{\sigma} \quad\text{implies}\quad
+    \cmodsat{\struct{A}}{\Gamma}{t}{u}{\sigma}. \]
+\begin{proof}
+By induction on the proof of $\ctypedconv{\Gamma}{t}{u}{\sigma}$. The proof is similar to that of Theorem~\ref{thm:soundness}.
+\end{proof}
+\end{thm}
+
+\subsection{The algorithm} \label{sec:nbe-alg}
+%TODO better title?
+%TODO add some more explanatory text
+
+We are now ready to define the algorithm. Our algorithm is similar to that of Reynolds \cite{reynolds1998normalization}. The main steps of the algorithm are as follows:
+\begin{enum}
+    \item We construct a suitable model $\struct{S}$ (Definition~\ref{def:nbe-model}).
+    \item The model gives rise to an interpretation $\sem{-}$ of terms in the model.
+    \item We define a family of functions $\quotef{\Gamma}{\sigma} : \kscomp{\struct{S}}{\sigma}{\Gamma} \to \cNf{\Gamma}{\sigma}$ indexed by types and contexts by recursion on $\sigma$. These functions provide an inverse to the interpretation/evaluation function $\sem{-}$. Due to the contravariance of function types in the first argument, we also need a family of functions $\unquotef{\Gamma}{\sigma} : \cNe{\Gamma}{\sigma} \to \kscomp{\struct{S}}{\sigma}{\Gamma}$ in the other direction, embedding neutral terms (in particular, variables) into the semantics.
+    \item We derive the normalization function $\normf{\Gamma}{\sigma}$ from the ingredients above. For this, we need a special environment $\idenv{\Gamma}$ (Definition~\ref{def:idenv}) that maps all variables in $\Gamma$ to their semantic counterpart.
+\end{enum}
+
+There is a close analogy between these steps and the structure of the proof of Section~\ref{sec:Tait-proof}.
+\begin{enum}
+    \item The model $\struct{S}$ corresponds to the convertibility predicate $R$ (Definition~\ref{def:conv-pred}). In particular, both $\kscomp{\struct{S}}{\sigma}{\Gamma}$ and $R_\sigma$ are defined by induction on the type $\sigma$.
+    \item The fact that there is an interpretation $\sem{-}$ of terms in the model corresponds the Fundamental Lemma (Lemma~\ref{lem:fundamental-lem-norm}).
+    \item The functions $\quotef{\Gamma}{\sigma}$ and $\unquotef{\Gamma}{\sigma}$ correspond to the two parts of Lemma~\ref{lem:computability-normal-forms}, respectively.
+    \item The derivation of the normalization function follows the proof of weak normalization in Section~\ref{sec:Tait-proof}. In particular, the environment $\idenv{\Gamma}$ corresponds to the fact that the identity substitution on $\Gamma$ satisfies the logical predicate $R$.
+\end{enum}
+
+We now present the construction of our normalization function.
+
+\begin{defn}
+We write $C$ for the poset of contexts ordered by inclusion.
+\end{defn}
+
+\begin{defn} \label{def:nbe-model}
+Let $\struct{S}$ be the standard Kripke model over $C$, where the base families $(X, j)$ are given by $\kscomp{X}{\beta}{\Gamma} = \cNf{\Gamma}{\beta}$ and $\kscomp{j}{\beta}{\Gamma,\Gamma'}(n) = n$.
+\end{defn}
+
+\begin{notn} \label{not:fresh-vars}
+\hfill \vspace{-6pt}
+\begin{items}
+\item For a context $\Gamma$, let $\fresh{\Gamma}{\sigma}$ denote a fresh variable of type $\sigma$ for $\Gamma$, that is, a variable $\fresh{\Gamma}{\sigma} \in \Var[\sigma]$ such that $\fresh{\Gamma}{\sigma} \notin \Gamma$.
+
+\item Let $\extfresh{\Gamma}{\sigma}$ denote the context $\Gamma \cup \singset[\fresh{\Gamma}{\sigma}]$.
+\end{items}
+\end{notn}
+
+\begin{defn} \label{def:quote-unquote}
+We define two families of functions $\quotef{\Gamma}{\sigma} : \kscomp{\struct{S}}{\sigma}{\Gamma} \to \cNf{\Gamma}{\sigma}$ and $\unquotef{\Gamma}{\sigma} : \cNe{\Gamma}{\sigma} \to \kscomp{\struct{S}}{\sigma}{\Gamma}$ simultaneously by recursion on $\sigma$:
+\begin{align*}
+\quotef{\Gamma}{\beta}(n) &= n \\
+\quotef{\Gamma}{\functy{\sigma}{\tau}}(f) &= \lamv{\fresh{\Gamma}{\sigma}}{\sigma}{\quotef{\extfresh{\Gamma}{\sigma}}{\tau}(f_{\extfresh{\Gamma}{\sigma}}(\quotef{\extfresh{\Gamma}{\sigma}}{\sigma}(\fresh{\Gamma}{\sigma})))} \\
+\\
+\unquotef{\Gamma}{\beta}(m) &= m \\
+(\unquotef{\Gamma}{\functy{\sigma}{\tau}}{m})_{\Gamma'}(a)
+    &= \unquotef{\Gamma'}{\tau}(\app{m}{\quotef{\Gamma'}{\sigma}(a)})
+\end{align*}
+\end{defn}
+
+%TODO remark that \quotef fills the role of the mapping from semantic objects to normal forms referred to in the introduction. Because of the contravariance of function types, we also need a function \unquotef in the other direction that works on neutral terms. This duality is reminiscent of the mutual definition of normal forms and neutral terms.
+
+\begin{comment}
+Note the condition "$x$ fresh" in the second case of $\quotef$. This is obviously not a well-defined condition from a mathematical perspective. Rather, it aims to provide computational intuition: when computing the result of $\quotef$ at a function type, we generate a fresh variable name in order avoid capturing the other free variables in the term returned by the recursive call. It is not too difficult to avoid this ambiguity by slightly modifying the interpretation, allowing us to control which variables may occur free in terms.
+\end{comment}
+
+%TODO improve the wording of definitions and lemmas from this point
+
+\begin{defn} \label{def:idenv}
+For all contexts $\Gamma$, we define the environment $\idenv{\Gamma}$ as follows:
+\[ \idenv{\Gamma}(x, \Gamma') = \unquotef{\Gamma'}{\sigma}(x)
+    \quad \text{for } (x : \sigma) \in \Gamma' \sups \Gamma \]
+\end{defn}
+
+%TODO prove this
+We have that $\ctypedenv{\idenv{\Gamma}}{\Gamma}{\Gamma}$.
+
+\begin{defn} \label{def:normalization-function}
+We define the function $\normf{\Gamma}{\sigma}$ as follows:
+\[ \normf{\Gamma}{\sigma}(t) = \quotef{\Gamma}{\sigma}(\ksint{t}{\idenv{\Gamma}}{\Gamma}). \]
+\end{defn}
+
+We now prove the correctness of $\normf{}{}$ by showing that it is a normalization function in the sense of Definition~\ref{def:normalization-function-reqs}.
+
+%TODO
+\begin{comment}
+add more lemmas, possibly:
+- naturality of quote/unquote
+- compatibility of \eta (i.e. \eta_{\extfresh{\Gamma}{\sigma}} = \kupdenv{\eta_\Gamma}{\fresh{\Gamma}{\sigma}}{\unquotef{\sigma}(\fresh{\Gamma}{\sigma})}
+\end{comment}
+
+\begin{lem} \label{lem:norm-idempotent-nf}
+\hfill \vspace{-6pt}
+\begin{enum}
+\item For all $m \in \cNe{\Gamma}{\sigma}$, we have $\ksint{m}{\idenv{\Gamma}}{\Gamma} = \unquotef{\Gamma}{\sigma}(m)$.
+\item For all $n \in \cNf{\Gamma}{\sigma}$, we have $\normf{\Gamma}{\sigma}(n) = n$.
+\end{enum}
+\begin{proof}
+By simultaneous induction on neutral terms and normal forms.
+%TODO complete this proof
+\end{proof}
+\end{lem}
+
+%TODO prove the other requirements too (if they are present)
+\begin{thm} \label{thm:norm-fun-correctness}
+The function $\normf{\Gamma}{\sigma}$ defined in Definition~\ref{def:normalization-function} satisfies the requirements in Definition~\ref{def:normalization-function-reqs}.
+\begin{proof}
+Condition (ii) follows from Theorem~\ref{thm:kripke-soundness} and the definition of $\normf{\Gamma}{\sigma}$. By Theorem~\ref{thm:weak-norm}, we know that there is $n \in \Nf[\sigma]$ such that $\conv{t}{n}{\sigma}$. By Condition (ii) and Lemma~\ref{lem:norm-idempotent-nf}, we get $\normf{\Gamma}{\sigma}(t) = \normf{\Gamma}{\sigma}(n) = n$. Hence, $\conv{t}{\normf{\Gamma}{\sigma}(t)}{\sigma}$, showing Condition (i).
+%TODO fix this
+(Note: technically, we need to show $\ctypedconv{\Gamma}{t}{\normf{\Gamma}{\sigma}(t)}{\sigma}$. For this, we need that $\ctypedtm{\Gamma}{n}{\sigma}$, which can be shown by a syntactic argument).
+\end{proof}
+\end{thm}
+
+\begin{cor} \label{cor:conv-normal-forms}
+For all $\ctypedtm{\Gamma}{t}{\sigma}$ and $\ctypedtm{\Gamma}{u}{\sigma}$, we have $\ctypedconv{\Gamma}{t}{u}{\sigma}$ iff $\normf{\Gamma}{\sigma}(t) = \normf{\Gamma}{\sigma}(u)$.
+\begin{proof}
+The only if direction is Definition~\ref{def:normalization-function-reqs} (ii). The if direction follows from Definition~\ref{def:normalization-function-reqs} (i), and reflexivity, transitivity, and symmetry of the convertibility relation.
+\end{proof}
+\end{cor}
+
+\begin{cor} \label{cor:conv-dec}
+Given $\ctypedtm{\Gamma}{t}{\sigma}$ and $\ctypedtm{\Gamma}{t}{\sigma}$, it is decidable whether $\ctypedconv{\Gamma}{t}{u}{\sigma}$.
+\begin{proof}
+By Corollary~\ref{cor:conv-normal-forms}, we can compute $\normf{\Gamma}{\sigma}(t)$ and $\normf{\Gamma}{\sigma}(u)$ and compare the resulting normal forms for syntactic equality.
+\end{proof}
+\end{cor}
+
+%TODO give a second proof of completeness using binary bilogical relations?
+%TODO abstract away quote-unquote shenanigans so that defining nf and proving its completeness follow from the same general theorem? (this would be a proof-relevant version of bilogical relations) Problem: need to introduce Kripke logical relations, difficult to phrase result without categorical language. It might be better to do this for the categorical case

@@ -1,0 +1,708 @@
+%TODO add references to standard category theory literature?
+In this chapter, we recall some important categorical notions, constructions, and theorems that are used throughout the upcoming chapters, and we fix the associated notation.
+
+Categories are denoted by uppercase Latin letters in calligraphic font (e.g. $\cat{A}, \cat{B}, \cat{C}$). Specific named categories are written with boldface letters, such as the category $\Set$ of sets and functions and the category $\Cat$ of small categories and functors. The collection of objects of a category $\cat{C}$ is denoted by $\Ob{\cat{C}}$. To indicate that $A$ is an object of $\cat{C}$, we also write $A \in \cat{C}$ instead of $A \in \Ob{\cat{C}}$. For $A, B \in \cat{C}$, the collection of morphisms from $A$ to $B$ is denoted by $\Hom[\cat{C}]{A}{B}$, or $\Hom{A}{B}$ if the category $\cat{C}$ is clear from the context. The identity morphism on $A$ is written as $\id[A]$, and the composition of morphisms $f : B \to C$ and $g : A \to B$ is written as $f \circ g$ or $fg$. The subscript of $\id[A]$ is sometimes dropped when understood from context.
+
+The image of an object $A \in \cat{C}$ under a functor $F : \cat{C} \to \cat{D}$ is written as $F(A)$ or $FA$. Similarly, the image of a morphism $f$ is written as $F(f)$ or $Ff$. The identity functor on $\cat{C}$ is denoted by $\idfunc[\cat{C}]$ or $\id[\cat{C}]$. Just like for morphisms, the composition of functors $F : \cat{B} \to \cat{C}$ and $G : \cat{A} \to \cat{B}$ is written as $F \circ G$ or $FG$.
+%TODO just use unambiguous notation?
+Note that juxtaposition is thus overloaded to mean both composition and application. However, we try to avoid ambiguity by employing appropriate notation.
+
+Given a natural transformation $\mu : F \to G$ between functors $F, G : \cat{C} \to \cat{D}$, we denote its component at $A \in \cat{C}$ by $\mu_A$. The vertical composition of natural transformations $\mu : G \to H$ and $\nu : F \to G$ is again denoted by $\mu \circ \nu$ or $\mu\nu$. For a natural transformation $\mu : F \to G$ between functors $F, G : \cat{C} \to \cat{D}$ and functor $H : \cat{B} \to \cat{C}$, we write $\mu H : FH \to GH$ for the natural transformation given by $(\mu H)_A = \mu_{HA} : FHA \to GHA$. The operation sending $\mu$ to $\mu H$ is called \textit{whiskering} (on the right).
+
+%TODO: move notation for functor category here?
+
+%TODO structure of chapter?
+
+\section{Universal properties}
+%TODO add examples in the category of sets?
+
+\begin{defn} \label{def:terminal-object}
+An object $T$ in a category $\cat{C}$ is called \emph{terminal} if for every object $X$ of $\cat{C}$ there is exactly one morphism $h : X \to T$. Diagrammatically:
+% https://q.uiver.app/#q=WzAsMixbMCwwLCJYIl0sWzEsMCwiVCJdLFswLDEsIlxcZXhpc3RzISBoIiwwLHsic3R5bGUiOnsiYm9keSI6eyJuYW1lIjoiZGFzaGVkIn19fV1d
+\[\begin{tikzcd}
+	X & T
+	\arrow["{\exists! h}", dashed, from=1-1, to=1-2]
+\end{tikzcd}\]
+\end{defn}
+
+Given a terminal object $T$, we write $\mterm[X] : X \to T$ for the unique morphism into $T$. If a category $\cat{C}$ has a terminal object, it is denoted by $\1[\cat{C}]$ or simply $\1$.
+
+\begin{ex} \label{ex:set-terminal-object}
+In the category $\Set$, every singleton set is terminal. A canonical choice for the terminal object is the set $\singset[\nul]$ containing only the empty set. Since the choice does not matter, we choose some singleton set $\singset$ for the terminal object and use the notation $\singel$ for its only element. The unique morphism $\mterm[X] : X \to \singset$ is the constant map with value $\singel$.
+\end{ex}
+
+\begin{ex}
+%TODO rephrase?
+In the category $\Cat$, any category with exactly one object and one identity morphism on that object is terminal.
+\end{ex}
+
+The dual notion of a terminal object is an initial object.
+
+\begin{defn} \label{def:initial-object}
+An object $I$ in a category $\cat{C}$ is called \emph{initial} if for every object $X$ of $\cat{C}$ there is exactly one morphism $h : I \to X$. Diagrammatically:
+% https://q.uiver.app/#q=WzAsMixbMSwwLCJYIl0sWzAsMCwiSSJdLFsxLDAsIlxcZXhpc3RzISBoIiwwLHsic3R5bGUiOnsiYm9keSI6eyJuYW1lIjoiZGFzaGVkIn19fV1d
+\[\begin{tikzcd}
+	I & X
+	\arrow["{\exists! h}", dashed, from=1-1, to=1-2]
+\end{tikzcd}\]
+\end{defn}
+
+Given an initial object $I$, we write $\minit[X] : I \to X$ for the unique morphism out of $I$. If a category $\cat{C}$ has an initial object, it is denoted by $\0[\cat{C}]$ or simply $\0$.
+
+\begin{ex} \label{ex:set-initial-object}
+The category of sets has exactly one initial object, namely, the empty set $\nul$. The unique morphism $\minit[X] : \nul \to X$ is the empty function.
+\end{ex}
+
+\begin{defn} \label{def:binary-products}
+Let $A$ and $B$ be objects in $\cat{C}$. Then a \emph{(binary) product} of $A$ and $B$ is an object $P$ together with morphisms $p_1 : P \to A$, $p_2 : P \to B$ satisfying the following universal property: for every pair of morphisms $f : X \to A$, $g : X \to B$ there exists a unique morphism $h : X \to P$ such that 
+\[ p_1 \circ h = f \quad\text{and}\quad p_2 \circ h = g. \]
+Diagrammatically:
+% https://q.uiver.app/#q=WzAsNCxbMSwxLCJQIl0sWzAsMSwiQSJdLFsyLDEsIkIiXSxbMSwwLCJYIl0sWzAsMSwicF8xIl0sWzAsMiwicF8yIiwyXSxbMywxLCJmIiwyXSxbMywyLCJnIl0sWzMsMCwiXFxleGlzdHMhIGgiLDEseyJsYWJlbF9wb3NpdGlvbiI6NDAsInN0eWxlIjp7ImJvZHkiOnsibmFtZSI6ImRhc2hlZCJ9fX1dXQ==
+\[\begin{tikzcd}
+	& X \\
+	A & P & B
+	\arrow["{p_1}", from=2-2, to=2-1]
+	\arrow["{p_2}"', from=2-2, to=2-3]
+	\arrow["f"', from=1-2, to=2-1]
+	\arrow["g", from=1-2, to=2-3]
+	\arrow["{\exists! h}"{description, pos=0.4}, dashed, from=1-2, to=2-2]
+\end{tikzcd}\]
+\end{defn}
+
+If $(P, p_1, p_2)$ is a product of $A$ and $B$, then $P$ is denoted by $\cprod{A}{B}$. The maps $p_1$ and $p_2$ are called \emph{projections}, and they are denoted by $\mfst[A,B] : \cprod{A}{B} \to A$ and $\msnd[A,B] : \cprod{A}{B} \to B$, respectively. In the literature, the object $\cprod{A}{B}$ itself is often referred to as the product of $A$ and $B$, leaving the projections implicit; we follow this convention. Given maps $f : X \to A$, $g : X \to B$, the unique morphism arising from the universal property is written as $\mpair{f}{g} : X \to \cprod{A}{B}$ and is called the \emph{pairing} of $f$ and $g$.
+
+\begin{ex} \label{ex:set-products}
+The categorical product of sets $A$ and $B$ is the cartesian product $\cartprod{A}{B}$ together with the projection functions $\mfst[A,B] : \cartprod{A}{B} \to A$ and $\msnd[A,B] : \cartprod{A}{B} \to B$ sending $(a,b)$ to $a$ and $b$, respectively. The pairing of functions $f : X \to A$ and $g : X \to B$ is the function $\mpair{f}{g} : X \to \cartprod{A}{B}$ given by $\mpair{f}{g}(x) = (f(x), g(x))$.
+\end{ex}
+
+\begin{defn} \label{def:product-functor}
+Suppose that for every pair of objects $A, B$ in $\cat{C}$ we have chosen a product $\cprod{A}{B}$ of $A$ and $B$. Then we can define the \emph{product functor} $\cprod{-}{-} : \prodcat{\cat{C}}{\cat{C}} \to \cat{C}$ that sends a pair of objects $(A, B)$ to $\cprod{A}{B}$ and a pair of morphisms $(f : A \to A', g : B \to B')$ to
+\[ \cprod{f}{g} = \mpair{f \circ \mfst[A,B]}{g \circ \msnd[A,B]}
+    : \cprod{A}{B} \to \cprod{A'}{B'}. \]
+\end{defn}
+\begin{prop}
+The operations defined in Definition~\ref{def:product-functor} constitute a functor.
+%TODO proof?
+\end{prop}
+
+%TODO what is the precedence of exponentials? should it be parenthesized?
+\begin{defn} \label{def:exponentials}
+Let $A$ and $B$ be objects in $\cat{C}$ such that for every object $X$ of $\cat{C}$ we have chosen a product $\cprod{X}{A}$ of $X$ and $A$. Then an \emph{exponential} of $A$ and $B$ is an object $E$ together with a map $\epsilon : \cprod{E}{A} \to B$ satisfying the following universal property: for any morphism $f : \cprod{X}{A} \to B$ there exists a unique morphism $h : X \to E$ such that
+\[ \epsilon \circ (\cprod{h}{\id[A]}) = f. \]
+Diagrammatically:
+% https://q.uiver.app/#q=WzAsNSxbMSwxLCJcXGNwcm9ke1h9e0F9Il0sWzIsMCwiQiJdLFsxLDAsIlxcY3Byb2R7RX17QX0iXSxbMCwxLCJYIl0sWzAsMCwiRSJdLFswLDEsImYiLDJdLFsyLDEsIlxcZXBzaWxvbiJdLFswLDIsIlxcY3Byb2R7aH17XFxpZFtBXX0iXSxbMyw0LCJcXGV4aXN0cyEgaCIsMCx7InN0eWxlIjp7ImJvZHkiOnsibmFtZSI6ImRhc2hlZCJ9fX1dXQ==
+\[\begin{tikzcd}
+	E & {\cprod{E}{A}} & B \\
+	X & {\cprod{X}{A}}
+	\arrow["f"', from=2-2, to=1-3]
+	\arrow["\epsilon", from=1-2, to=1-3]
+	\arrow["{\cprod{h}{\id[A]}}", from=2-2, to=1-2]
+	\arrow["{\exists! h}", dashed, from=2-1, to=1-1]
+\end{tikzcd}\]
+\end{defn}
+
+%TODO parentheses around exponential?
+%TODO mention that the exponential transpose of h is \mev \circ (\cprod{h}{\id})?
+If $(E, \epsilon)$ is an exponential of $A$ and $B$, then $E$ is denoted by $\cexp{A}{B}$. The map $\epsilon$ is called \emph{evaluation}, and it is denoted by $\mev[A,B] : \cprod{(\cexp{A}{B})}{B} \to A$. Similarly to products, the object $\cexp{A}{B}$ itself is often referred to as the exponential of $A$ and $B$ in the literature, leaving the evaluation implicit; we follow this convention. Given a map $f : \cprod{X}{A} \to B$, the unique morphism $h : X \to \cexp{A}{B}$ arising from the universal property is written as $\mcurry{f}$, and the maps $f$ and $h$ are called \emph{exponential transposes} of each other. The operation sending $f$ to $\mcurry{f}$ is also called \emph{currying}.
+
+\begin{ex} \label{ex:set-exponentials}
+The exponential $\cexp{A}{B}$ in $\Set$ is given by the set $\funcset{A}{B}$ of functions from $A$ to $B$, and the evaluation map $\mev[A,B] : \cartprod{\funcset{A}{B}}{A} \to B$ sends a pair $(f, x)$ to $f(x)$. The exponential transpose of a function $f : \cartprod{X}{A} \to B$ is the function $\mcurry{f} : X \to \funcset{A}{B}$ that sends an element $x \in X$ to the function $a \mapsto f(x, a)$.
+\end{ex}
+
+%TODO parentheses around exponential?
+\begin{defn} \label{def:exponential-functor}
+Suppose that for every pair of objects $A, B$ in $\cat{C}$ we have chosen an exponential $\cexp{A}{B}$ of $A$ and $B$ (note that this also requires choices for products). Then we can define the \emph{exponential functor} $\cexp{-}{-} : \prodcat{\op{\cat{C}}}{\cat{C}} \to \cat{C}$ that sends a pair of objects $(A,B)$ to $\cexp{A}{B}$ and a pair of morphisms $(f : A' \to A, g : B \to B')$ to
+\[ \cexp{f}{g} = \mcurry{g \circ \mev[A,B] \circ (\cprod{\id}{f})}
+    : \cexp{A}{B} \to \cexp{A'}{B'}. \]
+\end{defn}
+\begin{prop}
+The operations defined in Definition~\ref{def:exponential-functor} constitute a functor.
+%TODO proof?
+\end{prop}
+
+\begin{defn}
+Let $f : A \to C$ and $g : B \to C$ be morphisms in $\cat{C}$. Then a \emph{pullback} of $f$ and $g$ is an object $P$ together with morphisms $p_1 : P \to A$, $p_2 : P \to B$ satisfying the following universal property: for every pair of morphisms $a : X \to A$, $b : X \to B$ such that $fa = gb$, there exists a unique morphism $h : X \to P$ such that 
+\[ p_1 \circ h = a \quad\text{and}\quad p_2 \circ h = b. \]
+Diagrammatically:
+% https://q.uiver.app/#q=WzAsNSxbMSwxLCJQIl0sWzIsMSwiQiJdLFsyLDIsIkMiXSxbMSwyLCJBIl0sWzAsMCwiWCJdLFsxLDIsImciXSxbMywyLCJmIiwyXSxbMCwzLCJwXzEiXSxbNCwzLCJhIiwyXSxbMCwxLCJwXzIiLDJdLFs0LDEsImIiXSxbNCwwLCJcXGV4aXN0cyEgaCIsMSx7InN0eWxlIjp7ImJvZHkiOnsibmFtZSI6ImRhc2hlZCJ9fX1dXQ==
+\[\begin{tikzcd}
+	X \\
+	& P & B \\
+	& A & C
+	\arrow["g", from=2-3, to=3-3]
+	\arrow["f"', from=3-2, to=3-3]
+	\arrow["{p_1}", from=2-2, to=3-2]
+	\arrow["a"', from=1-1, to=3-2]
+	\arrow["{p_2}"', from=2-2, to=2-3]
+	\arrow["b", from=1-1, to=2-3]
+	\arrow["{\exists! h}"{description}, dashed, from=1-1, to=2-2]
+\end{tikzcd}\]
+\end{defn}
+
+The notation and terminology of pullbacks is similar to that of products. If $(P, p_1, p_2)$ is a pullback of $f : A \to C$ and $g : B \to C$, then the maps $p_1$ and $p_2$ are called \emph{projections}. In the literature, the object $P$ itself is often referred to as the pullback of $f$ and $g$, leaving the projections implicit; we follow this convention. Given maps $a : X \to A$, $b : X \to B$, the unique morphism arising from the universal property is written as $\mpair{a}{b} : X \to P$ and is called the \emph{pairing} of $a$ and $b$.
+
+\begin{ex} \label{ex:set-pullbacks}
+In the category $\Set$, the pullback of functions $f : A \to C$ and $g : B \to C$ is the set
+\[ P = \setof{(x, y) \in \cartprod{A}{B}}{f(x) = g(y)} \]
+together with the projection functions $\mfst[A,B]$ and $\msnd[A,B]$ restricted to $P$. Given a commuting square
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJYIl0sWzAsMSwiQSJdLFsxLDAsIkIiXSxbMSwxLCJDIl0sWzEsMywiZiIsMl0sWzIsMywiZyJdLFswLDEsImEiLDJdLFswLDIsImIiXV0=
+\[\begin{tikzcd}
+	X & B \\
+	A & C
+	\arrow["f"', from=2-1, to=2-2]
+	\arrow["g", from=1-2, to=2-2]
+	\arrow["a"', from=1-1, to=2-1]
+	\arrow["b", from=1-1, to=1-2]
+\end{tikzcd}\]
+the pairing $\mpair{a}{b} : X \to \cartprod{A}{B}$ factors through $P$, i.e. we have $\mpair{a}{b}(x) \in P$ for all $x \in X$. This is because $\mpair{a}{b}(x) = (a(x), b(x))$ and $f(a(x)) = (fa)(x) = (gb)(x) = g(b(x))$ for all $x \in X$ due to the commutativity of the square above.
+\end{ex}
+
+%TODO add remarks/propositions about the uniqueness of terminal objects/products/exponentials/pullbacks?
+
+%TODO add remarks that arrows with codomain a product/pullback are equal iff the morphisms obtained by postcomposition by the projections are equal
+
+%TODO above lemmas/propositions will be used without explicit reference
+
+\section{Cartesian closed categories and functors}
+
+\begin{defn} \label{def:ccc}
+A \emph{cartesian closed category} (or \textit{CCC} for short) is a category equipped with
+\begin{items}
+    \item a choice of a terminal object $\1$,
+    \item an operation which sends a pair of objects $A$ and $B$ to a product $(\cprod{A}{B}, \mfst[A,B], \msnd[A,B])$ of $A$ and $B$, and
+    \item an operation which sends a pair of objects $A$ and $B$ to an exponential $(\cexp{A}{B}, \mev[A,B])$ of $A$ and $B$.
+\end{items}
+\end{defn}
+
+We often omit the objects in the subscripts of the projections and the evaluation when they are understood from context.
+
+\begin{rem} \label{rem:ccc-structure-vs-property}
+%TODO add reference to literature?
+Definition~\ref{def:ccc} defines a CCC as a category equipped with the additional data of choices of a terminal object and products and exponentials for every pair of objects. That is, a CCC is a 4-tuple $(\cat{C}, \1, \cprod{-}{-}, \cexp{-}{-})$. In the literature, another common definition is to require the \textit{mere existence} of a terminal object, products, and exponentials, without fixing any particular choices. To elucidate the distinction, we may refer to a CCC in the former sense as a \emph{CCC with structure} and to a CCC in the latter sense as a \emph{CCC with property}. The unqualified term CCC refers to a CCC with structure.
+
+Assuming the axiom of choice, the two definitions are equivalent since it is always possible to choose products, exponentials, or other structures defined by universal properties. In constructive mathematics, however, it is often easier to carry around a choice of such structures together with the categories. For instance, to define the product functor $\cprod{-}{-} : \prodcat{\cat{C}}{\cat{C}} \to \cat{C}$ (Definition~\ref{def:product-functor}), it is necessary to have a choice of a product for every pair of objects in $\cat{C}$.
+
+The distinction between \textit{structure} and \textit{property} also becomes important (even in the classical setting) once one considers the notion of morphism between structured categories. In particular, one may consider (at least) two kinds of morphisms between CCCs: \textit{strict} morphisms which preserve the additional structure \textit{on the nose}, i.e. up to equality, and \textit{weak} morphisms which preserve it only up to isomorphism. A more detailed explanation can be found in Remark~\ref{rem:ccc-strict-vs-weak-preservation}.
+\end{rem}
+
+\begin{ex} \label{ex:set-is-ccc}
+The category $\Set$ is cartesian closed. This follows from examples \ref{ex:set-terminal-object}, \ref{ex:set-products}, and \ref{ex:set-exponentials}.
+\end{ex}
+
+\begin{defn} \label{def:strict-preservation}
+Let $\cat{C}$ and $\cat{D}$ be cartesian closed categories and let $F : \cat{C} \to \cat{D}$ be a functor. We say that
+\begin{enum}
+    \item $F$ \emph{strictly preserves the terminal object} if $F(\1[\cat{C}]) = \1[\cat{D}]$;
+    \item $F$ \emph{strictly preserves products} if
+    \[ F(\cprod{A}{B}) = \cprod{FA}{FB}, \quad
+        F(\mfst[A,B]) = \mfst[FA,FB], \quad\text{and}\quad
+        F(\msnd[A,B]) = \msnd[FA,FB] \]
+    for all $A, B \in \cat{C}$;
+    \item $F$ \emph{strictly preserves exponentials} if
+    \[ F(\cexp{A}{B}) = \cexp{FA}{FB} \quad\text{and}\quad
+        F(\mev[A,B]) = \mev[FA,FB] \]
+    for all $A, B \in \cat{C}$.
+\end{enum}
+\end{defn}
+
+\begin{defn} \label{def:strict-cc-functor}
+A functor $F : \cat{C} \to \cat{D}$ between CCCs is called \emph{strict cartesian closed} if it strictly preserves the terminal object, products, and exponentials.    
+\end{defn}
+
+\begin{rem} \label{rem:ccc-strict-vs-weak-preservation}
+%TODO replace 'make sense' with a more appropriate phrase?
+The adjective \textit{strict} in Definition~\ref{def:strict-preservation} indicates that the structure is preserved \textit{up to equality}: the chosen structure on $\cat{C}$ is mapped to the chosen structure on $\cat{D}$. Note that this notion of structure preserving morphism does not make sense when $\cat{C}$ or $\cat{D}$ does not carry a chosen structure. This is our main motivation for adopting CCCs with structure since we need to work with strict morphisms in Chapter~\ref{chap:gluing}.
+
+%TODO reference to literature?
+There is another, more widespread, notion of preservation in the literature on category theory, whereby the structure is only preserved \textit{up to isomorphism}. For instance, in the case of products, we could weaken the condition $F(\cprod{A}{B}) = \cprod{FA}{FB}$ to $F(\cprod{A}{B}) \cong \cprod{FA}{FB}$.  We refer to this idea as \textit{weak} preservation to distinguish it from the strict notion. An advantage of weak preservation is that it is possible to generalize it to the case when $\cat{C}$ or $\cat{D}$ does not have all (chosen) products; see Definition~\ref{def:weak-preserve-products}.
+\end{rem}
+
+%TODO introduce terminology for categories with terminal object/products/exponentials?
+%TODO replace 'make sense' with a more appropriate phrase?
+The notions in Definition~\ref{def:strict-preservation} also make sense when $\cat{C}$ and $\cat{D}$ are not necessarily cartesian closed. For instance, if $\cat{C}$ and $\cat{D}$ only have chosen terminal objects $\1[\cat{C}]$ and $\1[\cat{D}]$, we still say that $F$ strictly preserves the terminal object whenever $F(\1[\cat{C}]) = \1[\cat{D}]$. Similarly, we only need to assume the existence of chosen products to state that a functor strictly preserves them.
+
+%TODO is this proposition necessary?
+From the universal properties of products and exponentials, it follows that a strict cartesian closed functor strictly preserves pairing and currying too.
+
+\begin{prop}
+Let $F : \cat{C}\to \cat{D}$ be a strict cartesian closed functor. Then
+\begin{enum}
+    \item $F(\mterm[X]) = \mterm[FX]$ for all $X \in \cat{C}$;
+    \item $F(\mpair{f}{g}) = \mpair{Ff}{Fg}$ for all $f : X \to A$ and $g : X \to B$;
+    \item F($\cprod{f}{g}) = \cprod{Ff}{Fg}$ for all $f : A \to A'$ and $g : B \to B'$;
+    \item $F(\mcurry{f}) = \mcurry{Ff}$ for all $f : \cprod{X}{A} \to B$.
+\end{enum}
+\begin{proof}
+\begin{enum}
+    \item The equality follows since both sides are maps into the terminal object $F(\1[\cat{C}]) = \1[\cat{D}]$.
+    
+    \item Note that we have
+    \[ \mfst[FA,FB] \circ F(\mpair{f}{g}) = F(\mfst[A,B]) \circ F(\mpair{f}{g})
+    = F(\mfst[A,B] \circ \mpair{f}{g}) = Ff \]
+    and
+    \[ \msnd[FA,FB] \circ F(\mpair{f}{g}) = F(\msnd[A,B]) \circ F(\mpair{f}{g})
+    = F(\msnd[A,B] \circ \mpair{f}{g}) = Fg. \]
+    However, since $\mpair{Ff}{Fg}$ is the unique morphism $FX \to \cprod{FA}{FB}$ such that $\mfst[FA,FB] \circ \mpair{Ff}{Fg} = Ff$ and $\msnd[FA,FB] \circ \mpair{Ff}{Fg} = Fg$, we must have $F(\mpair{f}{g}) = \mpair{Ff}{Fg}$.
+    
+    \item We calculate:
+    \begin{align*}
+    F(\cprod{f}{g})
+       &= F(\mpair{f \circ \mfst[A,B]}{g \circ \msnd[A,B]})
+        = \mpair{F(f \circ \mfst[A,B])}{F(g \circ \msnd[A,B])} \\
+       &= \mpair{Ff \circ \mfst[FA,FB]}{Fg \circ \msnd[FA,FB]}
+        = \cprod{Ff}{Fg}.
+    \end{align*}
+    
+    \item We have
+    \begin{align*}
+    \mev[FA,FB] &\circ (\cprod{F(\mcurry{f})}{\id[FA]})
+        = F(\mev[A,B]) \circ (\cprod{F(\mcurry{f})}{F(\id[A])}) \\
+       &= F(\mev[A,B]) \circ F(\cprod{\mcurry{f}}{\id[A]})
+        = F(\mev[A,B] \circ (\cprod{\mcurry{f}}{\id[A]}))
+        = Ff.
+     \end{align*}
+      Hence, by the universal property of exponentials, $F(\mcurry{f}) = \mcurry{Ff}$. \qedhere
+\end{enum}
+\end{proof}
+\end{prop}
+
+The class of strict cartesian closed functors includes the identity functors and is closed under composition. Hence:
+
+\begin{defn} \label{def:cat-ccc}
+Cartesian closed categories and strict cartesian closed functors between them form a category $\CCC$.
+\end{defn}
+
+%TODO add some text here about weak preservation?
+
+\begin{defn} \label{def:weak-preserve-terminal}
+Let $F : \cat{C} \to \cat{D}$ be a functor and suppose that $T$ is a terminal object in $\cat{C}$. We say that $F$ \emph{weakly preserves the terminal object $T$} if $FT$ is terminal in $\cat{D}$.
+\end{defn}
+
+\begin{defn} \label{def:weak-preserve-products}
+Let $F : \cat{C} \to \cat{D}$ be a functor.
+\begin{enum}
+\item Suppose that
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJBIl0sWzEsMCwiUCJdLFsyLDAsIkIiXSxbMSwwLCJwXzEiLDJdLFsxLDIsInBfMiJdXQ==
+\[\begin{tikzcd}
+	A & P & B
+	\arrow["{p_1}"', from=1-2, to=1-1]
+	\arrow["{p_2}", from=1-2, to=1-3]
+\end{tikzcd}\]
+is a product of $A$ and $B$ in $\cat{C}$. We say that $F$ \emph{weakly preserves this product} if
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJGQSJdLFsxLDAsIkZQIl0sWzIsMCwiRkIiXSxbMSwwLCJGcF8xIiwyXSxbMSwyLCJGcF8yIl1d
+\[\begin{tikzcd}
+	FA & FP & FB
+	\arrow["{Fp_1}"', from=1-2, to=1-1]
+	\arrow["{Fp_2}", from=1-2, to=1-3]
+\end{tikzcd}\]
+is a product of $FA$ and $FB$ in $\cat{D}$.
+\item We say that $F$ \emph{weakly preserves products} if $F$ weakly preserves all products that exist.
+\end{enum}
+\end{defn}
+
+%TODO add some text here about the following notations?
+%TODO is notation the right environment?
+%TODO: are these at the appropriate place?
+\begin{notn}
+If $\cat{C}$ and $\cat{D}$ have chosen terminal objects and the functor $F : \cat{C} \to \cat{D}$ weakly preserves the terminal object, then the unique map
+\[ \mterm[F(\1[\cat{C}])] : F(\1[\cat{C}]) \to \1[\cat{D}] \]
+is an isomorphism. We denote its inverse by $\inv{\mterm[F\1]}$.
+\end{notn}
+
+\begin{notn}
+If $\cat{C}$ and $\cat{D}$ have chosen products and $F : \cat{C} \to \cat{D}$ is a functor, then there is a canonical map
+% https://q.uiver.app/#q=WzAsMixbMCwwLCJGKFxcY3Byb2R7QX17Qn0pIl0sWzMsMCwiXFxjcHJvZHtGQX17RkJ9Il0sWzAsMSwiXFxtcGFpcntGKFxcbWZzdCl9e0YoXFxtc25kKX0iXV0=
+\[\begin{tikzcd}
+	{F(\cprod{A}{B})} &&& {\cprod{FA}{FB}}
+	\arrow["{\mpair{F(\mfst)}{F(\msnd)}}", from=1-1, to=1-4]
+\end{tikzcd}\]
+denoted by $\prodcmp[A,B][F]$, which is natural in $A$ and $B$. Naturality means that if $f : A \to A'$ and $g : B \to B'$, then the square
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJGKFxcY3Byb2R7QX17Qn0pIl0sWzEsMCwiXFxjcHJvZHtGQX17RkJ9Il0sWzAsMSwiRihcXGNwcm9ke0EnfXtCJ30pIl0sWzEsMSwiXFxjcHJvZHtGQSd9e0ZCJ30iXSxbMCwxLCJcXHByb2RjbXBbQSxCXVtGXSJdLFsyLDMsIlxccHJvZGNtcFtBJyxCJ11bRl0iLDJdLFswLDIsIkYoXFxjcHJvZHtmfXtnfSkiLDJdLFsxLDMsIlxcY3Byb2R7RmZ9e0ZnfSJdXQ==
+\[\begin{tikzcd}
+	{F(\cprod{A}{B})} & {\cprod{FA}{FB}} \\
+	{F(\cprod{A'}{B'})} & {\cprod{FA'}{FB'}}
+	\arrow["{\prodcmp[A,B][F]}", from=1-1, to=1-2]
+	\arrow["{\prodcmp[A',B'][F]}"', from=2-1, to=2-2]
+	\arrow["{F(\cprod{f}{g})}"', from=1-1, to=2-1]
+	\arrow["{\cprod{Ff}{Fg}}", from=1-2, to=2-2]
+\end{tikzcd}\]
+commutes. If $F$ weakly preserves products, then $\prodcmp[A,B][F]$ is an isomorphism and we denote its inverse by $\inv*{\prodcmp[A,B][F]}$.
+\end{notn}
+
+%TODO parentheses around exponential?
+\begin{notn}
+If $\cat{C}$ and $\cat{D}$ have chosen exponentials and $F : \cat{C} \to \cat{D}$ is a weakly product preserving functor, then there is a canonical map $F(\cexp{A}{B}) \to \cexp{FA}{FB}$ which is the exponential transpose of the composite
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJcXGNwcm9ke0YoXFxjZXhwe0F9e0J9KX17RkF9Il0sWzQsMCwiRkIiXSxbMiwwLCJGKFxcY3Byb2R7KFxcY2V4cHtBfXtCfSl9e0F9KSJdLFsyLDEsIkYoXFxtZXYpIl0sWzAsMiwiXFxpbnYqe1xccHJvZGNtcFtcXGNleHB7QX17Qn0sQV1bRl19Il1d
+\[\begin{tikzcd}
+	{\cprod{F(\cexp{A}{B})}{FA}} && {F(\cprod{(\cexp{A}{B})}{A})} && FB
+	\arrow["{F(\mev)}", from=1-3, to=1-5]
+	\arrow["{\inv*{\prodcmp[\cexp{A}{B},A][F]}}", from=1-1, to=1-3]
+\end{tikzcd}\]
+We denote this canonical map by $\expcmp[A,B][F]$.
+\end{notn}
+
+As usual, the subscripts and superscripts in $\prodcmp[A,B][F]$ and $\expcmp[A,B][F]$ may be omitted.
+
+\section{Presheaves and representables}
+%TODO think about the order of results
+
+%TODO make this a definition?
+Given two categories $\cat{C}$ and $\cat{D}$, the collections of functors $\cat{C} \to \cat{D}$ and natural transformations between them form a category $\funccat{\cat{C}}{\cat{D}}$ called a \textit{functor category}.
+
+%TODO should $\cat{C}$ be small?
+\begin{defn} \label{def:presheaves}
+Let $\cat{C}$ be a small category.
+\begin{enum}
+\item A \emph{presheaf on $\cat{C}$} is a functor $\op{\cat{C}} \to \Set$.
+\item The \emph{category of presheaves on $\cat{C}$} is the functor category $\funccat{\op{\cat{C}}}{\Set}$ and is denoted by $\PSh{\cat{C}}$.
+\end{enum}
+\end{defn}
+
+%TODO add some text here about presheaves in general?
+
+%TODO smallness
+%TODO rephrase (hard to read)? change notation?
+\begin{defn} \label{def:yoneda-embedding}
+For any small category $\cat{C}$, there is a functor
+\[ \y : \cat{C} \to \PSh{\cat{C}}, \]
+called the \emph{Yoneda-embedding}, defined as follows. It sends an object $C \in \cat{C}$ to the presheaf $\yap{C}$ with $\yap{C}(X) = \Hom{X}{C}$ for each object $X \in \cat{C}$ and where for each morphism $f : Y \to X$ the operation $\yap{C}(f) : \yap{C}(X) \to \yap{C}(Y)$ is given by $\yap{C}(f)(g) = g \circ f$. Furthermore, it sends a morphism $g : C \to D$ to the natural transformation $\yap{g} : \yap{C} \to \yap{D}$ with components $(\yap{g})_X : \yap{C}(X) \to \yap{D}(X)$ given by $(\yap{g})_X(f) = g \circ f$.
+\end{defn}
+
+\begin{prop} \label{prop:yoneda-is-embedding}
+The Yoneda-embedding $\y$ is fully faithful.
+\begin{proof}
+For the proof, see \cite{mac2013categories}.
+\end{proof}
+\end{prop}
+
+\begin{defn} \label{def:reindexing}
+Let $F : \cat{C} \to \cat{D}$ be a functor. The \emph{reindexing functor} or \emph{precomposition functor} $\reind{F} : \PSh{\cat{D}} \to \PSh{\cat{C}}$ maps a presheaf $P : \op{\cat{D}} \to \Set$ to $P\op{F} : \op{\cat{C}} \to \Set$ and it maps a natural transformation $\mu : P \to Q$ to the whiskering $\mu\op{F} : P\op{F} \to Q\op{F}$.
+\end{defn}
+
+%TODO make nicer
+\begin{defn} \label{def:presheaf-cc-structure}
+\hfill \vspace{-3pt}
+\begin{items}
+    \item The terminal presheaf $\1$ is defined by $\1(C) = \singset$ and $\1(f) = \id[\singset]$.
+    \item The product $\cprod{P}{Q}$ of presheaves $P$ and $Q$ is pointwise: $(\cprod{P}{Q})(C) = \cprod{PC}{QC}$ and $(\cprod{P}{Q})(f) = \cprod{Pf}{Qf}$. The projections $\mfst[P,Q] : \cprod{P}{Q} \to P$ and $\msnd[P,Q] : \cprod{P}{Q} \to Q$ are also pointwise: $(\mfst[P,Q])_C = \mfst[PC,QC]$ and $(\msnd[P,Q])_C = \msnd[PC,QC]$.
+    \item The exponential $\cexp{P}{Q}$ of presheaves $P$ and $Q$ is defined as follows: $(\cexp{P}{Q})(C) = \Hom{\cprod{\yap{C}}{P}}{Q}$ and $(\cexp{P}{Q})(f)(\sigma) = \sigma \circ (\cprod{y_f}{\id[P]})$. The evaluation $\mev[P,Q] : \cprod{(\cexp{P}{Q})}{P} \to Q$ is given by $(\mev[P,Q])_C(\sigma, x) = \sigma_C(\id[C], x)$.
+\end{items}
+\end{defn}
+
+%TODO rephrase statement of proposition?
+\begin{prop} \label{prop:presheaf-cat-is-ccc}
+The category $\PSh{\cat{C}}$ is cartesian closed with terminal object, products, and exponentials as in Definition~\ref{def:presheaf-cc-structure}.
+\begin{proof}
+For a full proof, we refer the reader to standard category theory literature, e.g. \cite{maclane:moerdijk, leinster:basic-ct}. Here, we simply note the following. The pairing $\mpair{\mu}{\nu} : X \to \cprod{P}{Q}$ of natural transformations $\mu : X \to P$ and $\nu : X \to Q$ is pointwise: $\mpair{\mu}{\nu}_C = \mpair{\mu_C}{\nu_C}$. The exponential transpose $\mcurry{\mu} : X \to \cexp{P}{Q}$ of a natural transformation $\mu : \cprod{X}{P} \to Q$ is given by $\mcurry{\mu}_C(x)_D(h, a) = \mu_D(P(h)(x), a)$.
+\end{proof}
+\end{prop}
+
+\begin{defn} \label{def:presheaf-cat-pullback-structure}
+Let $\mu : Q \to S$ and $\nu : R \to S$ be morphisms of presheaves. The pullback of $\mu$ and $\nu$ is the presheaf $P$ given by
+\begin{align*}
+PC &= \setof{(x, y) \in \cartprod{QC}{RC}}{\mu_C(x) = \nu_C(y)} \\
+(Pf)(x, y) &= ((Qf)(x), (Rf)(y))
+\end{align*}
+together with projections $p_1 : P \to Q$ and $p_2 : P \to R$ given by $(p_1)_C(x, y) = x$ and $(p_2)_C(x, y) = y$.
+\end{defn}
+
+\begin{prop} \label{prop:presheaf-cat-pullbacks}
+The category $\PSh{\cat{C}}$ has pullbacks as given in Definition~\ref{def:presheaf-cat-pullback-structure}.
+\begin{proof}
+We again refer the reader to basic category theory literature, e.g. \cite{leinster:basic-ct}.
+\end{proof}
+\end{prop}
+
+Note that the construction of pullbacks in $\PSh{\cat{C}}$ is also pointwise. That is, the pullback $P$ of $\mu : Q \to S$ and $\nu : R \to S$ in $\PSh{\cat{C}}$ evaluated at $\cat{C}$ is the pullback of $\mu_C : QC \to SC$ and $\nu_C : RC \to SC$ in $\Set$.
+
+\begin{prop} \label{prop:yoneda-preservation}
+The Yoneda-embedding weakly preserves the terminal object and products.
+\begin{proof}
+The proof follows from reformulating the universal property of terminal objects and products by stating that we have a natural bijection on the hom-sets.
+\end{proof}
+\end{prop}
+
+\begin{prop} \label{prop:reindexing-preservation}
+Let $F : \cat{C} \to \cat{D}$ be a functor. The reindexing functor $\reind{F} : \PSh{\cat{D}} \to \PSh{\cat{C}}$ weakly preserves the terminal object and products.
+\begin{proof}
+The reindexing functor $\reind{F} : \PSh{\cat{D}} \to \PSh{\cat{C}}$ has a left adjoint given by Kan-extension (\cite{mac2013categories}, Chapter X, Section 4, Theorem 1). Hence, it weakly preserves limits, in particular, the terminal object and products.
+\end{proof}
+\end{prop}
+
+\begin{defn} \label{def:representation}
+Let $P : \op{\cat{C}} \to \Set$ be a presheaf.
+\begin{enum}
+\item We say that $P$ is \emph{representable} if there exists an object $C \in \cat{C}$ such that $\yap{C} \cong P$.
+\item If $C \in \cat{C}$ and $\rho : \yap{C} \to P$ is an isomorphism, then we say that the pair $(C, \rho)$ is a \emph{representation} of $P$.
+\end{enum}
+\end{defn}
+
+Note the difference between the two parts of Definition~\ref{def:representation}. A representation of a presheaf $P$ is \textit{extra structure}, namely the pair ($C, \rho)$, attached to $P$. In contrast, representability is a property of a presheaf $P$, stating that there \textit{merely} exists a representation of $P$. The distinction is analogous to the discussion regarding CCCs with structure versus CCCs with property (Remark~\ref{rem:ccc-structure-vs-property}).
+
+\begin{rem}
+%TODO example of such a situation
+There may be multiple representations of the same presheaf.
+%TODO state this more precisely? prove it?
+However, it follows from the properties of the Yoneda-embedding (Proposition~\ref{prop:yoneda-is-embedding}) that any two representations are isomorphic in an appropriate sense.
+Hence, if a presheaf is representable, then its representation is \textit{essentially unique}, meaning unique up to isomorphism.
+%TODO add this remark?
+%Therefore, we also say that a representation is a \textit{property-like structure}.
+\end{rem}
+
+\section{Comma categories}
+
+%TODO more introductory text?
+%The material in this section is used in Chapter~\ref{chap:gluing}.
+
+%TODO ugly notation for projections
+\begin{defn} \label{def:comma-category}
+Let
+% https://q.uiver.app/#q=WzAsMyxbMCwxLCJcXGNhdHtCfSJdLFsxLDEsIlxcY2F0e0N9Il0sWzEsMCwiXFxjYXR7QX0iXSxbMCwxLCJHIiwyXSxbMiwxLCJGIl1d
+\[\begin{tikzcd}
+	& {\cat{A}} \\
+	{\cat{B}} & {\cat{C}}
+	\arrow["G"', from=2-1, to=2-2]
+	\arrow["F", from=1-2, to=2-2]
+\end{tikzcd}\]
+be a diagram of categories and functors. The \emph{comma category} $\comma{F}{G}$ is defined as follows:
+\begin{items}
+    \item objects are triples $(A, B, p)$ where $A \in \cat{A}$, $B \in \cat{B}$, and $p : FA \to GB$;
+    \item morphisms $(A, B, p) \to (A', B', p')$ are pairs $(f, g)$ with $f : A \to A'$ and $g : B \to B'$ such that the square
+    % https://q.uiver.app/#q=WzAsNCxbMCwwLCJGQSJdLFsxLDAsIkZBJyJdLFswLDEsIkdCIl0sWzEsMSwiR0InIl0sWzAsMSwiRmYiXSxbMiwzLCJHZyIsMl0sWzAsMiwicCIsMl0sWzEsMywicCciXV0=
+    \[\begin{tikzcd}
+    	FA & {FA'} \\
+    	GB & {GB'}
+    	\arrow["Ff", from=1-1, to=1-2]
+    	\arrow["Gg"', from=2-1, to=2-2]
+    	\arrow["p"', from=1-1, to=2-1]
+    	\arrow["{p'}", from=1-2, to=2-2]
+    \end{tikzcd}\]
+    commutes;
+    \item identities and composition are componentwise.
+\end{items}
+\end{defn}
+
+%TODO are \commatrd and the diagram necessary?
+There is a projection functor $\commafst{F}{G} : \comma{F}{G} \to \cat{A}$ sending $(A, B, p)$ to $A$ and $(f, g)$ to $f$. Similarly, $\commasnd{F}{G} : \comma{F}{G} \to \cat{B}$ projects the components in $\cat{B}$. Furthermore, there is a natural transformation $\commatrd{F}{G} : F\commafst{F}{G} \to G\commasnd{F}{G}$ given by $(\commatrd{F}{G})_{(A, B, p)} = p$. These objects can be organized into a diagram
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJcXGNvbW1he0Z9e0d9Il0sWzEsMCwiXFxjYXR7QX0iXSxbMSwxLCJcXGNhdHtDfSJdLFswLDEsIlxcY2F0e0J9Il0sWzMsMiwiRyIsMl0sWzEsMiwiRiJdLFswLDMsIlxcY29tbWFzbmR7Rn17R30iLDJdLFswLDEsIlxcY29tbWFmc3R7Rn17R30iXSxbMSwzLCJcXGNvbW1hdHJke0Z9e0d9IiwwLHsic2hvcnRlbiI6eyJzb3VyY2UiOjMwLCJ0YXJnZXQiOjMwfSwibGV2ZWwiOjJ9XV0=
+\[\begin{tikzcd}
+	{\comma{F}{G}} & {\cat{A}} \\
+	{\cat{B}} & {\cat{C}}
+	\arrow["G"', from=2-1, to=2-2]
+	\arrow["F", from=1-2, to=2-2]
+	\arrow["{\commasnd{F}{G}}"', from=1-1, to=2-1]
+	\arrow["{\commafst{F}{G}}", from=1-1, to=1-2]
+	\arrow["{\commatrd{F}{G}}", shorten <=8pt, shorten >=8pt, Rightarrow, from=1-2, to=2-1]
+\end{tikzcd}\]
+
+There are important special cases of the comma category construction for which we introduce notation.
+\begin{notn}
+\hfill \vspace{-3pt}
+\begin{items}
+\item If $F$ or $G$ is the identity functor $\idfunc[\cat{C}]$, then we replace the name of the functor by the category $\cat{C}$. For instance, $\comma{\cat{C}}{G}$ stands for $\comma{\idfunc[\cat{C}]}{G}$.
+\item If the domain of $F$ or $G$ is the terminal category $\1$, then the functor can be identified with an object $X$ in $\cat{C}$, and we use the object in place of the functor. For instance, $\comma{F}{X}$ stands for $\comma{F}{G}$ where $G : \1 \to \cat{C}$ sends the unique object of $\1$ to $X$.
+\end{items}
+\end{notn}
+
+\begin{lem}
+Suppose $\cat{C}$ and $\cat{D}$ are categories with a terminal object and $F : \cat{C} \to \cat{D}$ weakly preserves the terminal object. Then $(\1[\cat{D}], \1[\cat{C}], \inv{\mterm[F\1]})$ is a terminal object in $\comma{\cat{D}}{F}$.
+\begin{proof}
+Given an object $(X, A, p) \in \comma{\cat{D}}{F}$, we have a morphism
+% https://q.uiver.app/#q=WzAsNCxbMSwwLCJcXDEiXSxbMSwxLCJGXFwxIl0sWzAsMCwiWCJdLFswLDEsIkZBIl0sWzAsMSwiXFxpbnZ7XFxtdGVybVtGXFwxXX0iXSxbMiwzLCJwIiwyXSxbMywxLCJGKFxcbXRlcm1bQV0pIiwyXSxbMiwwLCJcXG10ZXJtW1hdIl1d
+\[\begin{tikzcd}
+	X & \1 \\
+	FA & F\1
+	\arrow["{\inv{\mterm[F\1]}}", from=1-2, to=2-2]
+	\arrow["p"', from=1-1, to=2-1]
+	\arrow["{F(\mterm[A])}"', from=2-1, to=2-2]
+	\arrow["{\mterm[X]}", from=1-1, to=1-2]
+\end{tikzcd}\]
+in $\comma{\cat{D}}{F}$. The square commutes since $F\1$ is terminal. The uniqueness of this morphism follows from the fact that its components are maps to terminal objects.
+\end{proof}
+\end{lem}
+
+\begin{comment}
+Given an object $(X, A, p) \in \comma{\cat{D}}{G}$, we have a morphism
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJYIl0sWzEsMCwiR1xcMSJdLFsxLDEsIkdcXDEiXSxbMCwxLCJHQSJdLFsxLDIsIlxcaWQiXSxbMCwzLCJwIiwyXSxbMCwxLCJHKFxcbXRlcm1bQV0pIFxcY2lyYyBwIl0sWzMsMiwiRyhcXG10ZXJtW0FdKSIsMl1d
+\[\begin{tikzcd}
+	X & G\1 \\
+	GA & G\1
+	\arrow["\id", from=1-2, to=2-2]
+	\arrow["p"', from=1-1, to=2-1]
+	\arrow["{G(\mterm[A]) \circ p}", from=1-1, to=1-2]
+	\arrow["{G(\mterm[A])}"', from=2-1, to=2-2]
+\end{tikzcd}\]
+in $\comma{\cat{D}}{G}$. Furthermore, if
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJYIl0sWzAsMSwiR0EiXSxbMSwwLCJHXFwxIl0sWzEsMSwiR1xcMSJdLFsyLDMsIlxcaWRbR1xcMV0iXSxbMCwyLCJmIl0sWzEsMywiR2ciLDJdLFswLDEsInAiLDJdXQ==
+\[\begin{tikzcd}
+	X & G\1 \\
+	GA & G\1
+	\arrow["{\id[G\1]}", from=1-2, to=2-2]
+	\arrow["f", from=1-1, to=1-2]
+	\arrow["Gg"', from=2-1, to=2-2]
+	\arrow["p"', from=1-1, to=2-1]
+\end{tikzcd}\]
+is any morphism, then $g = \mterm[A]$, so $f = G(\mterm[A]) \circ p$ by commutativity of the diagram.
+\end{comment}
+
+\begin{lem}
+Suppose $\cat{C}$ and $\cat{D}$ are categories with products and $F : \cat{C} \to \cat{D}$ weakly preserves products. Then the product of $(X, A, p)$ and $(Y, B, q)$ in $\comma{\cat{D}}{F}$ is
+%TODO make this a diagram in $\cat{D}$?
+% https://q.uiver.app/#q=WzAsMyxbMywwLCIoXFxjcHJvZHtYfXtZfSwgXFxjcHJvZHtBfXtCfSwgcikiXSxbNiwwLCIoWSwgQiwgcSkiXSxbMCwwLCIoWCwgQSwgcCkiXSxbMCwyLCIoXFxtZnN0W1gsWV0sXFw7XFxtZnN0W0EsQl0pIiwyXSxbMCwxLCIoXFxtc25kW1gsWV0sXFw7XFxtc25kW0EsQl0pIl1d
+\[\begin{tikzcd}
+	{(X, A, p)} &&& {(\cprod{X}{Y}, \cprod{A}{B}, r)} &&& {(Y, B, q)}
+	\arrow["{(\mfst[X,Y],\;\mfst[A,B])}"', from=1-4, to=1-1]
+	\arrow["{(\msnd[X,Y],\;\msnd[A,B])}", from=1-4, to=1-7]
+\end{tikzcd}\]
+where $r$ is the composite
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJcXGNwcm9ke1h9e1l9Il0sWzEsMCwiXFxjcHJvZHtGQX17RkJ9Il0sWzIsMCwiRihcXGNwcm9ke0F9e0J9KSJdLFswLDEsIlxcY3Byb2R7cH17cX0iXSxbMSwyLCJcXGludntcXHByb2RjbXBbQSxCXX0iXV0=
+\[\begin{tikzcd}
+	{\cprod{X}{Y}} & {\cprod{FA}{FB}} & {F(\cprod{A}{B})}
+	\arrow["{\cprod{p}{q}}", from=1-1, to=1-2]
+	\arrow["{\inv{\prodcmp[A,B]}}", from=1-2, to=1-3]
+\end{tikzcd}\]
+\begin{proof}
+%TODO spell this out?
+The first projection $(\mfst[X,Y], \mfst[A,B])$ is a morphism in $\comma{\cat{D}}{F}$ since
+% https://q.uiver.app/#q=WzAsNSxbMCwwLCJcXGNwcm9ke1h9e1l9Il0sWzIsMCwiWCJdLFswLDEsIlxcY3Byb2R7RkF9e0ZCfSJdLFswLDIsIkYoXFxjcHJvZHtBfXtCfSkiXSxbMiwyLCJGQSJdLFsyLDMsIlxcaW52e1xccHJvZGNtcFtBLEJdfSIsMl0sWzAsMiwiXFxjcHJvZHtwfXtxfSIsMl0sWzAsMSwiXFxtZnN0W1gsWV0iXSxbMyw0LCJGKFxcbWZzdFtBLEJdKSIsMl0sWzIsNCwiXFxtZnN0W0ZBLEZCXSIsMV0sWzEsNCwicCJdXQ==
+\[\begin{tikzcd}
+	{\cprod{X}{Y}} && X \\
+	{\cprod{FA}{FB}} \\
+	{F(\cprod{A}{B})} && FA
+	\arrow["{\inv{\prodcmp[A,B]}}"', from=2-1, to=3-1]
+	\arrow["{\cprod{p}{q}}"', from=1-1, to=2-1]
+	\arrow["{\mfst[X,Y]}", from=1-1, to=1-3]
+	\arrow["{F(\mfst[A,B])}"', from=3-1, to=3-3]
+	\arrow["{\mfst[FA,FB]}"{description}, from=2-1, to=3-3]
+	\arrow["p", from=1-3, to=3-3]
+\end{tikzcd}\]
+commutes. The proof for the second projection $(\msnd[X,Y], \msnd[A,B])$ is similar.
+
+Now suppose we have two morphisms $(f, a) : (Z, C, u) \to (X, A, p)$ and $(g, b) : (Z, C, u) \to (Y, B, q)$ in $\comma{\cat{D}}{F}$, i.e. commuting squares
+% https://q.uiver.app/#q=WzAsOCxbMywwLCJaIl0sWzMsMSwiRkMiXSxbNCwwLCJZIl0sWzQsMSwiRkIiXSxbMCwwLCJaIl0sWzEsMCwiWCJdLFsxLDEsIkZBIl0sWzAsMSwiRkMiXSxbMCwxLCJ1IiwyXSxbMiwzLCJxIl0sWzAsMiwiZyJdLFsxLDMsIkZiIiwyXSxbNCw3LCJ1IiwyXSxbNSw2LCJwIl0sWzQsNSwiZiJdLFs3LDYsIkZhIiwyXV0=
+\[\begin{tikzcd}
+	Z & X && Z & Y \\
+	FC & FA && FC & FB
+	\arrow["u"', from=1-4, to=2-4]
+	\arrow["q", from=1-5, to=2-5]
+	\arrow["g", from=1-4, to=1-5]
+	\arrow["Fb"', from=2-4, to=2-5]
+	\arrow["u"', from=1-1, to=2-1]
+	\arrow["p", from=1-2, to=2-2]
+	\arrow["f", from=1-1, to=1-2]
+	\arrow["Fa"', from=2-1, to=2-2]
+\end{tikzcd}\]
+The pairing $\mpair{(f, a)}{(g, b)} : (Z, C, u) \to (\cprod{X}{Y}, \cprod{A}{B}, r)$ is defined as $(\mpair{f}{g}, \mpair{a}{b})$.
+%TODO spell this out?
+This is a morphism since
+% https://q.uiver.app/#q=WzAsNSxbMCwwLCJaIl0sWzAsMiwiRkMiXSxbMSwwLCJcXGNwcm9ke1h9e1l9Il0sWzEsMSwiXFxjcHJvZHtGQX17RkJ9Il0sWzEsMiwiRihcXGNwcm9ke0F9e0J9KSJdLFswLDEsInUiLDJdLFswLDIsIlxcbXBhaXJ7Zn17Z30iXSxbMiwzLCJcXGNwcm9ke3B9e3F9Il0sWzMsNCwiXFxpbnZ7XFxwcm9kY21wW0EsQl19Il0sWzEsNCwiRihcXG1wYWlye2F9e2J9KSIsMl0sWzEsMywiXFxtcGFpcntGYX17RmJ9IiwxXV0=
+\[\begin{tikzcd}
+	Z & {\cprod{X}{Y}} \\
+	& {\cprod{FA}{FB}} \\
+	FC & {F(\cprod{A}{B})}
+	\arrow["u"', from=1-1, to=3-1]
+	\arrow["{\mpair{f}{g}}", from=1-1, to=1-2]
+	\arrow["{\cprod{p}{q}}", from=1-2, to=2-2]
+	\arrow["{\inv{\prodcmp[A,B]}}", from=2-2, to=3-2]
+	\arrow["{F(\mpair{a}{b})}"', from=3-1, to=3-2]
+	\arrow["{\mpair{Fa}{Fb}}"{description}, from=3-1, to=2-2]
+\end{tikzcd}\]
+commutes.
+%TODO show the remaining details?
+Using the universal properties of $\cprod{X}{Y}$ and $\cprod{A}{B}$, it can be shown that it is the unique morphism satisfying the universal property of the product.
+\end{proof}
+\end{lem}
+
+%TODO remark more general lemma? $\comma{\cat{D}}{F}$ has a terminal object already if $\cat{C}$ does and $F$ is any functor
+%TODO remark another lemma? $\comma{\cat{D}}{F}$ has products if $\cat{C}$ does, $\cat{D}$ has pullbacks and $F$ is any functor
+
+\begin{lem}
+Suppose $\cat{C}$ and $\cat{D}$ are categories with exponentials, $\cat{D}$ has chosen pullbacks, and $F : \cat{C} \to \cat{D}$ weakly preserves products. Then the exponential of $(X, A, p)$ and $(Y, B, q)$ in $\comma{\cat{D}}{F}$ is
+% https://q.uiver.app/#q=WzAsMixbMCwwLCJcXGNwcm9keyhSLCBcXGNleHB7QX17Qn0sIHIpfXsoWCwgQSwgcCl9Il0sWzQsMCwiKFksIEIsIHEpIl0sWzAsMSwiKFxcbWV2W1gsWV1cXDooXFxjcHJvZHtrfXtcXGlkfSksXFw7XFxtZXZbQSxCXSkiXV0=
+\[\begin{tikzcd}
+	{\cprod{(R, \cexp{A}{B}, r)}{(X, A, p)}} &&&& {(Y, B, q)}
+	\arrow["{(\mev[X,Y]\:(\cprod{k}{\id}),\;\mev[A,B])}", from=1-1, to=1-5]
+\end{tikzcd}\]
+where $R$, $r$, and $k$ are given by the pullback diagram
+% https://q.uiver.app/#q=WzAsNSxbMCwxLCJGKFxcY2V4cHtBfXtCfSkiXSxbMSwxLCJcXGNleHB7RkF9e0ZCfSJdLFsyLDEsIlxcY2V4cHtYfXtGQn0iXSxbMiwwLCJcXGNleHB7WH17WX0iXSxbMCwwLCJSIl0sWzAsMSwiXFxleHBjbXBbQSxCXSIsMl0sWzEsMiwiXFxjZXhwe3B9e1xcaWR9IiwyXSxbMywyLCJcXGNleHB7XFxpZH17cX0iXSxbNCwwLCJyIiwyXSxbNCwzLCJrIl1d
+\begin{equation} \label{diag:comma-exp-pb}
+\begin{tikzcd}
+	R && {\cexp{X}{Y}} \\
+	{F(\cexp{A}{B})} & {\cexp{FA}{FB}} & {\cexp{X}{FB}}
+	\arrow["{\expcmp[A,B]}"', from=2-1, to=2-2]
+	\arrow["{\cexp{p}{\id}}"', from=2-2, to=2-3]
+	\arrow["{\cexp{\id}{q}}", from=1-3, to=2-3]
+	\arrow["r"', from=1-1, to=2-1]
+	\arrow["k", from=1-1, to=1-3]
+\end{tikzcd}
+\end{equation}
+\begin{proof}
+First, we check that the evaluation is a morphism in $\comma{\cat{D}}{F}$, i.e. that the diagram
+% https://q.uiver.app/#q=WzAsNixbMCwwLCJcXGNwcm9ke1J9e1h9Il0sWzEsMCwiXFxjcHJvZHsoXFxjZXhwe1h9e1l9KX17WH0iXSxbMiwwLCJZIl0sWzAsMSwiXFxjcHJvZHtGKFxcY2V4cHtBfXtCfSl9e0ZBfSJdLFswLDIsIkYoXFxjcHJvZHsoXFxjZXhwe0F9e0J9KX17QX0pIl0sWzIsMiwiRkIiXSxbMCwxLCJcXGNwcm9ke2t9e1xcaWR9Il0sWzEsMiwiXFxtZXZbWCxZXSJdLFswLDMsIlxcY3Byb2R7cn17cH0iLDJdLFszLDQsIlxcaW52e1xccHJvZGNtcFtcXGNleHB7QX17Qn0sQV19IiwyXSxbMiw1LCJxIl0sWzQsNSwiRihcXG1ldltBLEJdKSIsMl1d
+\[\begin{tikzcd}
+	{\cprod{R}{X}} & {\cprod{(\cexp{X}{Y})}{X}} & Y \\
+	{\cprod{F(\cexp{A}{B})}{FA}} \\
+	{F(\cprod{(\cexp{A}{B})}{A})} && FB
+	\arrow["{\cprod{k}{\id}}", from=1-1, to=1-2]
+	\arrow["{\mev[X,Y]}", from=1-2, to=1-3]
+	\arrow["{\cprod{r}{p}}"', from=1-1, to=2-1]
+	\arrow["{\inv{\prodcmp[\cexp{A}{B},A]}}"', from=2-1, to=3-1]
+	\arrow["q", from=1-3, to=3-3]
+	\arrow["{F(\mev[A,B])}"', from=3-1, to=3-3]
+\end{tikzcd}\]
+commutes.
+%TODO spell this out?
+This follows from the pullback diagram (\ref{diag:comma-exp-pb}) by taking the exponential transposes of the two composites.
+
+Next, suppose we have a morphism $(f, g) : \cprod{(Z, C, u)}{(X, A, p)} \to (Y, B, q)$ in $\comma{\cat{D}}{F}$, i.e. a commuting diagram
+% https://q.uiver.app/#q=WzAsNSxbMCwwLCJcXGNwcm9ke1p9e1h9Il0sWzAsMSwiXFxjcHJvZHtGQ317RkF9Il0sWzAsMiwiRihcXGNwcm9ke0N9e0F9KSJdLFsxLDAsIlkiXSxbMSwyLCJGQiJdLFsxLDIsIlxcaW52e1xccHJvZGNtcFtDLEFdfSIsMl0sWzAsMSwiXFxjcHJvZHt1fXtwfSIsMl0sWzAsMywiZiJdLFszLDQsInEiXSxbMiw0LCJGZyIsMl1d
+\[\begin{tikzcd}
+	{\cprod{Z}{X}} & Y \\
+	{\cprod{FC}{FA}} \\
+	{F(\cprod{C}{A})} & FB
+	\arrow["{\inv{\prodcmp[C,A]}}"', from=2-1, to=3-1]
+	\arrow["{\cprod{u}{p}}"', from=1-1, to=2-1]
+	\arrow["f", from=1-1, to=1-2]
+	\arrow["q", from=1-2, to=3-2]
+	\arrow["Fg"', from=3-1, to=3-2]
+\end{tikzcd}\]
+%TODO spell this out?
+Taking the exponential transposes of the two composites, using the naturality of $\inv{\prodcmp}$, we get that the diagram
+% https://q.uiver.app/#q=WzAsNixbMCwwLCJaIl0sWzAsMSwiRkMiXSxbMCwyLCJGKFxcY2V4cHtBfXtCfSkiXSxbMSwyLCJcXGNleHB7RkF9e0ZCfSJdLFsyLDIsIlxcY2V4cHtYfXtGQn0iXSxbMiwwLCJcXGNleHB7WH17WX0iXSxbMCwxLCJ1IiwyXSxbMSwyLCJGKFxcbWN1cnJ5e2d9KSIsMl0sWzIsMywiXFxleHBjbXBbQSxCXSIsMl0sWzMsNCwiXFxjZXhwe3B9e1xcaWR9IiwyXSxbNSw0LCJcXGNleHB7XFxpZH17cX0iXSxbMCw1LCJcXG1jdXJyeXtmfSJdXQ==
+\[\begin{tikzcd}
+	Z && {\cexp{X}{Y}} \\
+	FC \\
+	{F(\cexp{A}{B})} & {\cexp{FA}{FB}} & {\cexp{X}{FB}}
+	\arrow["u"', from=1-1, to=2-1]
+	\arrow["{F(\mcurry{g})}"', from=2-1, to=3-1]
+	\arrow["{\expcmp[A,B]}"', from=3-1, to=3-2]
+	\arrow["{\cexp{p}{\id}}"', from=3-2, to=3-3]
+	\arrow["{\cexp{\id}{q}}", from=1-3, to=3-3]
+	\arrow["{\mcurry{f}}", from=1-1, to=1-3]
+\end{tikzcd}\]
+commutes. Hence, applying the pullback property of (\ref{diag:comma-exp-pb}), we obtain a morphism $\bar{f} : Z \to R$ such that $k\bar{f} = \mcurry{f}$ and such that the diagram
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJaIl0sWzEsMCwiUiJdLFsxLDEsIkYoXFxjZXhwe0F9e0J9KSJdLFswLDEsIkZDIl0sWzAsMSwiXFxiYXJ7Zn0iXSxbMSwyLCJyIl0sWzAsMywidSIsMl0sWzMsMiwiRihcXG1jdXJyeXtnfSkiLDJdXQ==
+\[\begin{tikzcd}
+	Z & R \\
+	FC & {F(\cexp{A}{B})}
+	\arrow["{\bar{f}}", from=1-1, to=1-2]
+	\arrow["r", from=1-2, to=2-2]
+	\arrow["u"', from=1-1, to=2-1]
+	\arrow["{F(\mcurry{g})}"', from=2-1, to=2-2]
+\end{tikzcd}\]
+commutes. This shows that $(\bar{f}, \mcurry{g}) : (Z, C, u) \to (R, \cexp{A}{B}, r)$ is a morphism in $\comma{\cat{D}}{F}$.
+%TODO show the remaining details?
+Using the universal properties of $R$, $\cexp{X}{Y}$, and $\cexp{A}{B}$, it can be shown that this is the unique morphism satisfying the universal property of the exponential.
+\end{proof}
+\end{lem}
+
+\begin{prop} \label{prop:gluing-category-ccc}
+Let $\cat{C}$ and $\cat{D}$ be cartesian closed categories and $F : \cat{C} \to \cat{D}$ be a functor. Suppose $F$ weakly preserves the terminal object and products, and suppose $\cat{D}$ has chosen pullbacks. Then
+\begin{enum}
+\item the comma category $\comma{\cat{D}}{F}$ is cartesian closed, and
+\item the projection functor $\commasnd{\cat{D}}{F} : \comma{\cat{D}}{F} \to \cat{C}$ is strict cartesian closed.
+\end{enum} 
+\begin{proof}
+The first claim is a corollary of the previous three lemmas. The second claim follows immediately from the definitions of the terminal object, products, and exponentials in $\comma{\cat{D}}{F}$.
+\end{proof}
+\end{prop}

@@ -1,0 +1,455 @@
+\begin{comment}
+thoughts for intro:
+- motivation: how to categorify Tait proof/NbE?
+- presheaves are used to keep track of free variables (contexts)
+- the inductive structure of logical predicates suggests that they form a model
+- gluing category is the category of (proof relevant, Kripke) logical predicates
+- the Tait proof states that every term has a normal form, but does not provide a procedure for computing them: extensional vs intensional normalization, proof-irrelevance vs proof-relevance
+- Categorically: proof-irrelevant predicate is a monomorphism, proof-relevant one is any morphism
+\end{comment}
+
+\begin{comment}
+Chap: Gluing
+Main goals: present categorical proof, relate to NbE
+
+overview of proof
+- explain the main steps
+- relate the steps to NbE (on a high level)
+preparation
+- category of renamings/weakenings, or poset of contexts under extension
+- presheaf of terms via Yoneda embedding
+- presheaves of normals and neutrals (cannot be defined in presheaves over classifying category)
+HOAS?
+gluing category and its properties (CCC, projection is strict CC), subcategory on monos?
+- give intuition for the gluing category: category of logical predicates
+- explain/spell out its ccc structure?
+- add special cases for exponentiating with a representable?
+quote & unquote
+- define functions
+- show that they are morphisms in the slice category (quote-unquote yoga)
+def of normalization function + correctness
+- soundness
+- completeness
+- naturality
+- stability?
+\end{comment}
+
+In this chapter, we look at a categorical reconstruction of normalization by evaluation using categorical gluing. The presentation is similar to and is inspired by the work of Fiore \cite{fiore:2002:ppdp, fiore:2022:mscs} and Sterling and Spitters \cite{sterling:2018:arxiv}.
+
+The structure of the proof follows closely the components of normalization by evaluation (Section~\ref{sec:nbe-alg}).
+\begin{enum}
+    \item First, we define a suitable model, namely the gluing category $\gluecat$ (Definition~\ref{def:gluing-cat}) together with the interpretation $\glueint$ of base types (Definition~\ref{def:gluing-interpretation}). The gluing category $\gluecat$ can be seen as the category of logical predicates.
+    \item The model $(\gluecat, \glueint)$ gives rise to an interpretation functor $\cint[\glueint]{-}[\gluecat] : \syncat \to \gluecat$ (Definition~\ref{def:gluing-interpretation}).
+    \item Next, we define families of natural transformations $\gquote{\sigma}$ and $\gunquote{\sigma}$ (Definition~\ref{def:gluing-quote-unquote}). These natural transformations correspond to the `quote' and `unquote' functions of normalization by evaluation.
+    \item Finally, we define the normalization function as interpretation followed by quote (Definition~\ref{def:gluing-norm-fun}). For this, we need to extend the unquote map to contexts (Definition~\ref{def:gluing-unquote-context}), which is used to embed substitutions into the semantics. The environment $\idenv{\Gamma}$ corresponds to unquoting the identity substitution.
+\end{enum}
+
+\section{Neutral and normal forms via presheaves}
+
+In this section, we define presheaves $\PNe{\sigma}$ and $\PNf{\sigma}$ of neutral and normal terms, respectively, for all types $\sigma \in \sTy$. Intuitively, $\PNe{\sigma}$ and $\PNf{\sigma}$ are variable sets indexed by contexts, i.e. $\PNe{\sigma}(\Gamma) = \sNe{\Gamma}{\sigma}$ and $\PNf{\sigma}(\Gamma) = \sNf{\Gamma}{\sigma}$. The presheaf action on morphisms corresponds to substitution. Since neutral and normal terms are not closed under arbitrary substitutions, we need to restrict the base category of the presheaves to an appropriate subcategory of $\syncat$.
+
+In this thesis, we choose the category of \textit{weakenings} for the restricted base category, which is isomorphic to the dual of the poset of contexts under the prefix ordering. Alternative base categories are the category of \textit{order-preserving embeddings} or the category of \textit{renamings}. The former is used in \cite{altenkirch:1995:ctcs} (in which it is confusingly called the category of weakenings) and \cite{kovacs:2017:msc}, and the latter in \cite{fiore:2002:ppdp, sterling:2018:arxiv, fiore:2022:mscs}.
+
+\begin{defn}[Poset of contexts] \label{def:contexts-poset}
+We order the set $\sCon$ of contexts by the \emph{prefix ordering}: $\Gamma \le \Delta$ iff $\Gamma$ is a prefix of $\Delta$. We write $\ge$ for the dual order, which we call the \emph{extension order}: $\Delta \ge \Gamma$ iff $\Gamma \le \Delta$. If $\Delta \ge \Gamma$, we also say that $\Delta$ is an extension of $\Gamma$.
+\end{defn}
+
+From now on, the set $\sCon$ is assumed to carry the ordering $\ge$ of Definition~\ref{def:contexts-poset} unless otherwise stated. We view the poset $\pCon$ as a category whose objects are contexts and such that $\Hom[\pCon]{\Delta}{\Gamma}$ is a singleton $\singset$ if $\Delta \ge \Gamma$ and $\Hom[\pCon]{\Delta}{\Gamma}$ is empty otherwise.
+
+\begin{lem} \label{lem:context-extension-inversion}
+For every $\Delta, \Gamma \in \sCon$, we have
+\[ \Delta \ge \Gamma \quad\iff\quad
+    \Delta = \Gamma \vee \exists \Delta' \in \sCon, \sigma \in \sTy.\;
+                            \Delta = (\Delta', \sigma) \wedge \Delta' \ge \Gamma \]
+\begin{proof}
+Follows by induction on the difference of the lengths of $\Delta$ and $\Gamma$.
+\end{proof}
+\end{lem}
+
+In what follows, we often employ Lemma~\ref{lem:context-extension-inversion} to define mathematical objects depending on a pair of contexts $\Delta$ and $\Gamma$ such that $\Delta \ge \Gamma$ by case distinction (for instance, Definition~\ref{def:general-weakening}). In the second case, the definition may refer recursively to the object being defined but depending on the ``smaller" pair $\Delta' \ge \Gamma$. This type of definition can be seen as a sort of recursion principle for the partial order $\ge$. Alternatively, one may think of this definition scheme as recursion on lists but where the base case is $\Gamma$ instead of the empty list.
+
+%TODO move to next section?
+\begin{defn} \label{def:general-weakening}
+We define substitutions $\stypedsub{\Spsub[\Gamma][\Delta]}{\Delta}{\Gamma}$ for any pair of contexts $\Delta \ge \Gamma$:
+\[ \spsub[\Gamma][\Delta] =
+    \begin{cases}
+        \sidsub[\Gamma] & \text{ if } \Delta = \Gamma \\
+        \scompsub{\spsub[\Gamma][\Delta']}{\spsub[\Gamma][\sigma]} & \text{ if } \Delta = (\sextcon{\Delta'}{\sigma}) \wedge \Delta' \ge \Gamma
+    \end{cases}. \]
+\end{defn}
+
+The substitution $\spsub[\Gamma][\Delta]$ is a sort of generalized weakening. The primitive substitution $\spsub[\Gamma][\sigma]$ only adds the single type $\sigma$ to a context $\Gamma$. In contrast, $\spsub[\Gamma][\Delta]$ extends $\Gamma$ with any number of types.
+
+\begin{lem} \label{lem:psub-comp}
+$\sconvsub{\scompsub{\Spsub[\Gamma][\Delta]}{\Spsub[\Delta][\Theta]}}{\Spsub[\Gamma][\Theta]}{\Theta}{\Gamma}$
+\begin{proof}
+Using Lemma~\ref{lem:context-extension-inversion} on the proof that $\Theta \ge \Delta$.
+\end{proof}
+\end{lem}
+
+\begin{prop}
+There is an \emph{inclusion} functor $\inclcon : \pCon \to \syncat$.
+\begin{proof}
+The functor $\inclcon : \pCon \to \syncat$ is the identity on contexts, and it sends the unique morphism $\Delta \ge \Gamma$ in $\pCon$ to the equivalence class of $\spsub[\Gamma][\Delta] \in \sSub{\Delta}{\Gamma}$. Composition is preserved by Lemma~\ref{lem:psub-comp}, and identities are preserved by the definition of $\spsub[\Gamma][\Delta]$.
+\end{proof}
+\end{prop}
+
+The functor $\inclcon$ is bijective on objects and faithful. Hence, it allows us to view $\pCon$ as a wide subcategory of $\syncat$, containing only morphisms of the form $\spsub[\Gamma][\Delta]$ for $\Delta \ge \Gamma$. This subcategory is also called the \textit{category of weakenings}.
+
+Recall from Definition~\ref{def:reindexing} that the inclusion $\inclcon : \pCon \to \syncat$ gives rise to a \textit{reindexing functor} $\reind{\inclcon} : \PSh{\syncat} \to \PSh{\pCon}$.
+
+\begin{defn}
+We define the functor $\FSub : \syncat \to \PSh{\pCon}$ as the composite
+\[ \syncat \xto{\y} \PSh{\syncat} \xto{\reind{\inclcon}} \PSh{\pCon}. \]
+\end{defn}
+
+We write $\FSub[\Gamma]$ for $\FSub(\Gamma)$. Intuitively, $\FSub[\Gamma]$ is the presheaf of substitutions with codomain $\Gamma$. The presheaf action weakens the domain of a substitution, allowing extra free variables in the context.
+
+We are now ready to define the presheaves of neutral and normal terms \cite{altenkirch:1995:ctcs, sterling:2018:arxiv}.
+
+\begin{prop}
+We have presheaves $\PNe{\sigma} \in \PSh{\pCon}$ and $\PNf{\sigma} \in \PSh{\pCon}$ whose object parts are given by
+\[ \PNe{\sigma}(\Gamma) = \sNe{\Gamma}{\sigma} \quad\text{and}\quad
+   \PNf{\sigma}(\Gamma) = \sNf{\Gamma}{\sigma}. \]
+\begin{proof}
+The morphism parts of the presheaves $\PNe{\sigma}$ and $\PNf{\sigma}$ are essentially given by
+\[ \PNe{\sigma}(\Delta \ge \Gamma)(\stypedne{m}{\Gamma}{\sigma})
+        = \ssubst{m}{\spsub[\Gamma][\Delta]} \]
+and
+\[ \PNf{\sigma}(\Delta \ge \Gamma)(\stypednf{n}{\Gamma}{\sigma})
+        = \ssubst{n}{\spsub[\Gamma][\Delta]}, \]
+where, abusing notation slightly, we write $\Delta \ge \Gamma$ for the unique element of $\Hom[\pCon]{\Delta}{\Gamma}$. However, we cannot use the substitution term former (\textsc{subst} in Figure~\ref{fig:stlc2-terms-subs}) since terms of the form $\subst{t}{\gamma}$ for a term $t$ and substitution $\gamma$ are neither neutral nor normal. Instead, we need to define these actions using mutual recursion on the syntax of neutral terms and normal forms. We omit the details.
+\end{proof}
+\end{prop}
+
+\begin{prop} \label{prop:presheaf-syntax}
+We have the following morphisms:
+\begin{items}
+    \item $\PNe{\beta} \xto{\cong} \PNf{\beta}$
+    \item $\nvar{\sigma} : \FSub[\singlist{\sigma}] \to \PNe{\sigma}$
+    \item $\napp{\sigma}{\tau} : \cprod{\PNe{\functy{\sigma}{\tau}}}{\PNf{\sigma}} \to \PNe{\tau}$
+    \item $\nlam{\sigma}{\tau} : (\cexp{\FSub[\singlist{\sigma}]}{\PNf{\tau}}) \xto{\cong} \PNf{\functy{\sigma}{\tau}}$
+\end{items}
+\begin{proof}
+The first morphism coincides with the morphism in \cite[Figure 13]{fiore:2022:mscs}. The final three morphisms coincide with those in \cite[Figure 14]{fiore:2022:mscs}.
+\end{proof}
+\end{prop}
+
+Similarly to the presheaves of neutral terms, we have presheaves $\PNe{\Gamma} \in \PSh{\pCon}$ of neutral substitutions. These are necessary for Definition~\ref{def:gluing-unquote-context}.
+
+\section{Gluing category}
+
+In this section, we construct the gluing category (Definition~\ref{def:gluing-cat}) and prove that it is cartesian closed and hence a model of the simply typed $\lambda$-calculus. We also define the gluing interpretation (Definition~\ref{def:gluing-interpretation}) and discuss how to interpret the syntax of $\lambda$-calculus in the gluing category (Corollary~\ref{cor:gluing-interpretation}).
+
+As a first step, we need to show that the syntactic category $\syncat$ is cartesian closed.
+
+\begin{notn}
+Let $\Gamma = [A_1, \ldots, A_n] \in \sCon$ and $A \in \sTy$. Then $\functy{\Gamma}{A} \in \sTy$ is shorthand for $\functy{A_1}{\functy{\ldots}{\functy{A_n}{A}}}$.
+\end{notn}
+
+\begin{defn} \label{def:syncat-ccc-structure}
+\begin{enum}
+\item The terminal object in $\syncat$ is the empty context $\sempcon$.
+\item The product $\cprod{\Gamma}{\Delta}$ of contexts $\Gamma$ and $\Delta$ in $\syncat$ is their concatenation $\concat{\Gamma}{\Delta}$.
+%The first projection $\mfst[\Gamma,\Delta]$ is $\spsub[\Gamma][\concat{\Gamma}{\Delta}] : \concat{\Gamma}{\Delta} \to \Gamma$.
+%TODO for the second projection, we need to define $\Delta \\ \Gamma$ and $\Sq[\Gamma][\Delta]$ by recursion on \Delta \ge \Gamma
+\item If $\Delta = [B_1, \ldots, B_n]$, then the exponential $\cexp{\Gamma}{\Delta}$ is the context $[\functy{\Gamma}{B_1}, \ldots, \functy{\Gamma}{B_n}]$.
+%TODO: evaluation
+\end{enum}
+\end{defn}
+
+\begin{lem} \label{lem:syncat-ccc}
+The syntactic category $\syncat$ is cartesian closed with structure given in Definition~\ref{def:syncat-ccc-structure}.
+\begin{proof}
+The lemma can be proved using constructions similar to {\v{C}}ubri{\'c} et al. \cite[Proposition 3.6]{cubric:1998:mscs}. There are two differences: they use variable names in the context of P-category theory, whereas we use de Bruijn indices and explicit substitutions in the context of ordinary category theory.
+\end{proof}
+\end{lem}
+
+We can now define the gluing category $\gluecat$.
+
+\begin{defn}[Gluing category] \label{def:gluing-cat}
+We define the \emph{gluing category} $\gluecat$ to be the comma category $\comma{\PSh{\pCon}}{\FSub}$. The functors $\gluefst$ and $\gluesnd$ are given by following diagram:
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJcXGdsdWVjYXQiXSxbMSwwLCJcXFBTaHtcXHBDb259Il0sWzEsMSwiXFxQU2h7XFxwQ29ufSJdLFswLDEsIlxcc3luY2F0Il0sWzMsMiwiXFxGU3ViIiwyXSxbMSwyLCJcXGlkZnVuYyJdLFswLDEsIlxcZ2x1ZWZzdCJdLFswLDMsIlxcZ2x1ZXNuZCIsMl1d
+\[\begin{tikzcd}
+	\gluecat & {\PSh{\pCon}} \\
+	\syncat & {\PSh{\pCon}}
+	\arrow["\FSub"', from=2-1, to=2-2]
+	\arrow["\idfunc", from=1-2, to=2-2]
+	\arrow["\gluefst", from=1-1, to=1-2]
+	\arrow["\gluesnd"', from=1-1, to=2-1]
+\end{tikzcd}\]
+\end{defn}
+
+Recall that objects of $\gluecat$ are triples $(P, \Gamma, p)$ where $P \in \PSh{\pCon}$ is a presheaf over $\pCon$, $\Gamma \in \syncat$ is a syntactic context, and $p : P \to \FSub[\Gamma]$ is a natural transformation. The morphism $p$ can be seen as an indexed predicate over substitutions (where the index is the domain of the substitutions). Naturality of $p$ means that the predicate is stable under weakening.
+
+Now we show that $\gluecat$ is cartesian closed and that $\gluesnd$ is strict cartesian closed. For this, we need the following lemma.
+
+\begin{lem} \label{lem:fsub-weak-preservation}
+The functor $\FSub : \syncat \to \PSh{\pCon}$ weakly preserves the terminal object and products.
+\begin{proof}
+This is a consequence of Proposition~\ref{prop:yoneda-preservation} and Proposition~\ref{prop:reindexing-preservation}.
+\end{proof}
+\end{lem}
+
+\begin{prop}
+\begin{enum}
+\item The category $\gluecat$ is cartesian closed.
+\item The functor $\gluesnd : \gluecat \to \syncat$ is strict cartesian closed.
+\end{enum}
+\begin{proof}
+Follows immediately from Proposition~\ref{prop:gluing-category-ccc}, Lemma~\ref{lem:syncat-ccc}, Proposition~\ref{prop:presheaf-cat-is-ccc}, Lemma~\ref{lem:fsub-weak-preservation}, and Proposition~\ref{prop:presheaf-cat-pullbacks}.
+\end{proof}
+\end{prop}
+
+\begin{comment}
+\begin{enum}
+\item We define $\gluevar{\sigma} \in \gluecat$ as
+\[ \gluevar{\sigma} = (\FSub[\singlist{\sigma}], \singlist{\sigma}, \id[\FSub[\singlist{\sigma}]]). \]
+\item We define $\glueneut{\sigma} \in \gluecat$ as
+\[ \glueneut{\sigma} = (\PNe{\sigma}, \singlist{\sigma}, \predneut{\sigma}), \]
+where $\predneut{\sigma} : \PNe{\sigma} \to \FSub[\singlist{\sigma}]$ sends a neutral term $\stypedne{m}{\Gamma}{\sigma}$ to $[\stmsub{m}] \in \SSub{\Gamma}{\singlist{\sigma}}[\syncat]$.
+
+\item We define $\gluenorm{\sigma} \in \gluecat$ as
+\[ \gluenorm{\sigma} = (\PNf{\sigma}, \singlist{\sigma}, \prednorm{\sigma}), \]
+where $\prednorm{\sigma} : \PNf{\sigma} \to \FSub[\singlist{\sigma}]$ sends a normal term $\stypednf{n}{\Gamma}{\sigma}$ to $[\stmsub{n}] \in \SSub{\Gamma}{\singlist{\sigma}}[\syncat]$.
+\end{enum}
+\end{comment}
+
+We now define the gluing interpretation. Recall that for every term $\stypedtm{t}{\Gamma}{\sigma}$ we have the substitution $\stmsub{t} \in \sSub{\Gamma}{\singlist{\sigma}}$ (Notation~\ref{not:special-subs}).
+
+\begin{defn}[Gluing interpretation] \label{def:gluing-interpretation}
+We define the \emph{gluing interpretation} $\glueint : \Basetypes \to \gluecat$ as follows:
+\[ \glueint(\beta) = (\PNf{\beta}, \singlist{\beta}, \prednorm{\beta}), \]
+where $\prednorm{\beta} : \PNf{\beta} \to \FSub[\singlist{\beta}]$ sends a normal form $s \in \PNf{\beta}(\Gamma)$ to $[\stmsub{n}] \in \Hom[\syncat]{\Gamma}{\singlist{\beta}}$.
+\end{defn}
+
+By Theorem~\ref{thm:syncat-free-ldom}, we get an interpretation functor $\cint[\glueint]{-}[\gluecat] : \syncat \to \gluecat$ which is a morphism of $\lambda$-domains. This satisfies the following proposition.
+
+\begin{prop} \label{prop:proj-int-is-id}
+The following diagram of categories and functors commutes:
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJcXHN5bmNhdCJdLFsxLDAsIlxcZ2x1ZWNhdCJdLFsxLDEsIlxcc3luY2F0Il0sWzAsMiwiXFxpZGZ1bmNbXFxzeW5jYXRdIiwyXSxbMCwxLCJcXGNpbnRbXFxnbHVlaW50XXstfVtcXGdsdWVjYXRdIl0sWzEsMiwiXFxnbHVlc25kIl1d
+\[\begin{tikzcd}
+	\syncat & \gluecat \\
+	& \syncat
+	\arrow["{\idfunc[\syncat]}"', from=1-1, to=2-2]
+	\arrow["{\cint[\glueint]{-}[\gluecat]}", from=1-1, to=1-2]
+	\arrow["\gluesnd", from=1-2, to=2-2]
+\end{tikzcd}\]
+\begin{proof}
+By definition, the interpretation functor $\cint[\glueint]{-}[\gluecat]$ is the interpretation morphism $\cint[\glueint]{-}[S(\gluecat)]$, where $S$ is the functor from Proposition~\ref{prop:ccc-to-ldom}. Applying the functor $S$ to $\gluesnd : \gluecat \to \syncat$, we get the following commutative diagram of $\lambda$-domains due to the initiality of $\syncat$:
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJcXHN5bmNhdCJdLFsxLDAsIlMoXFxnbHVlY2F0KSJdLFsxLDEsIlMoXFxzeW5jYXQpIl0sWzAsMiwiIiwyLHsic3R5bGUiOnsiYm9keSI6eyJuYW1lIjoiZGFzaGVkIn19fV0sWzAsMSwiXFxjaW50W1xcZ2x1ZWludF17LX1bXFxnbHVlY2F0XSJdLFsxLDIsIlMoXFxnbHVlc25kKSJdXQ==
+\[\begin{tikzcd}
+	\syncat & {S(\gluecat)} \\
+	& {S(\syncat)}
+	\arrow[dashed, from=1-1, to=2-2]
+	\arrow["{\cint[\glueint]{-}[\gluecat]}", from=1-1, to=1-2]
+	\arrow["{S(\gluesnd)}", from=1-2, to=2-2]
+\end{tikzcd}\]
+We now obtain the desired diagram by forgetting the extra structure of $\lambda$-domains and their morphisms.
+\end{proof}
+\end{prop}
+
+\begin{rem}
+The above proof crucially depends on the strictness of the functor $\gluesnd : \gluecat \to \syncat$. This is why we decided to adopt CCCs with structure and strict cartesian closed functors in Chapter~\ref{chap:cat-prelims}. See also Remark~\ref{rem:ccc-strict-vs-weak-preservation}.
+\end{rem}
+
+We now characterize how the syntax of $\lambda$-calculus is interpreted in the gluing category.
+
+\begin{cor} \label{cor:gluing-interpretation}
+The following statements hold for the interpretation functor $\cint[\glueint]{-}[\gluecat]$.
+\begin{enum}
+\item For every $\sigma \in \sTy$, we have
+\[ \cintty[\glueint]{\sigma} = (\gluepsh{\sigma}, \singlist{\sigma}, \gluepred{\sigma}) \]
+for some $\gluepsh{\sigma} \in \PSh{\pCon}$ and $\gluepred{\sigma} : \gluepsh{\sigma} \to \FSub[[\sigma]]$.
+
+\item For every $\Gamma \in \sCon$, we have
+\[ \cintcon[\glueint]{\Gamma} = (\gluepsh{\Gamma}, \Gamma, \gluepred{\Gamma}) \]
+for some $\gluepsh{\Gamma} \in \PSh{\pCon}$ and $\gluepred{\Gamma} : \gluepsh{\Gamma} \to \FSub[\Gamma]$.
+
+\item For every $\stypedtm{t}{\Gamma}{\sigma}$, we have
+\[ \cinttm[\glueint]{t} = (\gluemortm{t}, [\stmsub{t}]) : (\gluepsh{\Gamma}, \Gamma, \gluepred{\Gamma}) \to (\gluepsh{\sigma}, \singlist{\sigma}, \gluepred{\sigma}) \]
+for some $\gluemortm{t} : \gluepsh{\Gamma} \to \gluepsh{\sigma}$. That is, the diagram
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJcXGdsdWVwc2h7XFxHYW1tYX0iXSxbMSwwLCJcXGdsdWVwc2h7XFxzaWdtYX0iXSxbMCwxLCJcXEZTdWJbXFxHYW1tYV0iXSxbMSwxLCJcXEZTdWJbXFxzaW5nbGlzdHtcXHNpZ21hfV0iXSxbMCwyLCJcXGdsdWVwcmVke1xcR2FtbWF9IiwyXSxbMSwzLCJcXGdsdWVwcmVke1xcc2lnbWF9Il0sWzAsMSwiXFxnbHVlbW9ydG17dH0iXSxbMiwzLCJcXFNjb21wc3Vie1tcXHN0bXN1Ynt0fV19ey19IiwyXV0=
+\[\begin{tikzcd}
+	{\gluepsh{\Gamma}} & {\gluepsh{\sigma}} \\
+	{\FSub[\Gamma]} & {\FSub[\singlist{\sigma}]}
+	\arrow["{\gluepred{\Gamma}}"', from=1-1, to=2-1]
+	\arrow["{\gluepred{\sigma}}", from=1-2, to=2-2]
+	\arrow["{\gluemortm{t}}", from=1-1, to=1-2]
+	\arrow["{\Scompsub{[\stmsub{t}]}{-}}"', from=2-1, to=2-2]
+\end{tikzcd}\]
+commutes.
+
+\item For every $\stypedsub{\gamma}{\Delta}{\Gamma}$, we have
+\[ \cintsub[\glueint]{\gamma} = (\gluemorsub{\gamma}, [\gamma]) : (\gluepsh{\Delta}, \Delta, \gluepred{\Delta}) \to (\gluepsh{\Gamma}, \Gamma, \gluepred{\Gamma}) \]
+for some $\gluemorsub{\gamma} : \gluepsh{\Delta} \to \gluepsh{\Gamma}$. That is, the diagram
+% https://q.uiver.app/#q=WzAsNCxbMCwwLCJcXGdsdWVwc2h7XFxEZWx0YX0iXSxbMSwwLCJcXGdsdWVwc2h7XFxHYW1tYX0iXSxbMCwxLCJcXEZTdWJbXFxEZWx0YV0iXSxbMSwxLCJcXEZTdWJbXFxHYW1tYV0iXSxbMCwyLCJcXGdsdWVwcmVke1xcRGVsdGF9IiwyXSxbMSwzLCJcXGdsdWVwcmVke1xcR2FtbWF9Il0sWzAsMSwiXFxnbHVlbW9yc3Vie1xcZ2FtbWF9Il0sWzIsMywiXFxTY29tcHN1YntbXFxnYW1tYV19ey19IiwyXV0=
+\[\begin{tikzcd}
+	{\gluepsh{\Delta}} & {\gluepsh{\Gamma}} \\
+	{\FSub[\Delta]} & {\FSub[\Gamma]}
+	\arrow["{\gluepred{\Delta}}"', from=1-1, to=2-1]
+	\arrow["{\gluepred{\Gamma}}", from=1-2, to=2-2]
+	\arrow["{\gluemorsub{\gamma}}", from=1-1, to=1-2]
+	\arrow["{\Scompsub{[\gamma]}{-}}"', from=2-1, to=2-2]
+\end{tikzcd}\]
+commutes.
+\end{enum}
+\begin{proof}
+This follows from Proposition~\ref{prop:proj-int-is-id}, because $\gluesnd$ picks out the second coordinate from the objects of the gluing category.
+\end{proof}
+\end{cor}
+
+\section{Quote and unquote}
+
+The goal of this section is to define the quote and unquote functions of normalization by evaluation.
+
+\begin{prop} \label{def:gluing-quote-unquote}
+We have two families of natural transformations
+\[ \gunquote{\sigma} : \PNe{\sigma} \to \gluepsh{\sigma} \quad\text{and}\quad    \gquote{\sigma} : \gluepsh{\sigma} \to \PNf{\sigma}. \]
+\begin{proof}
+We define $\gunquote{\sigma}$ and $\gquote{\sigma}$ by mutual recursion on the type $\sigma$. For the definitions, we use the morphisms in Proposition~\ref{prop:presheaf-syntax}.
+\begin{enum}
+\item For base types $\beta \in \Basetypes$, we have $\gluepsh{\beta} = \PNf{\beta}$. Thus, we put $\gunquote{\beta} = (\PNe{\beta} \xto{\cong} \PNf{\beta})$ and $\gquote{\beta} = \id[\PNf{\beta}]$.
+
+\item For function types $\functy{\sigma}{\tau}$, by Corollary~\ref{cor:gluing-interpretation}, we have that $\gluepsh{\functy{\sigma}{\tau}}$ is given by the pullback diagram
+% https://q.uiver.app/#q=WzAsNSxbMCwwLCJcXGdsdWVwc2h7XFxmdW5jdHl7XFxzaWdtYX17XFx0YXV9fSJdLFswLDEsIlxcRlN1YltcXHNpbmdsaXN0e1xcZnVuY3R5e1xcc2lnbWF9e1xcdGF1fX1dIl0sWzEsMSwiKFxcY2V4cHtcXEZTdWJbXFxzaW5nbGlzdHtcXHNpZ21hfV19e1xcRlN1YltcXHNpbmdsaXN0e1xcdGF1fV19KSJdLFszLDAsIlxcY2V4cHtcXGdsdWVwc2h7XFxzaWdtYX19e1xcZ2x1ZXBzaHtcXHRhdX19Il0sWzMsMSwiXFxjZXhwe1xcZ2x1ZXBzaHtcXHNpZ21hfX17XFxGU3ViW1xcc2luZ2xpc3R7XFx0YXV9XX0iXSxbMCwxLCJcXGdsdWVwcmVke1xcZnVuY3R5e1xcc2lnbWF9e1xcdGF1fX0iLDJdLFsxLDIsIlxcZXhwY21wW1xcc2luZ2xpc3R7XFxzaWdtYX0sXFxzaW5nbGlzdHtcXHRhdX1dIiwyXSxbMCwzLCJrIl0sWzMsNCwiXFxjZXhwe1xcZ2x1ZXBzaHtcXHNpZ21hfX17XFxnbHVlcHJlZHtcXHRhdX19Il0sWzIsNCwiXFxjZXhwe1xcZ2x1ZXByZWR7XFxzaWdtYX19e1xcRlN1YltcXHNpbmdsaXN0e1xcdGF1fV19IiwyXV0=
+\begin{equation} \label{diag:quote-unquote-pb}
+\begin{tikzcd}
+	{\gluepsh{\functy{\sigma}{\tau}}} &&& {\cexp{\gluepsh{\sigma}}{\gluepsh{\tau}}} \\
+	{\FSub[\singlist{\functy{\sigma}{\tau}}]} & {(\cexp{\FSub[\singlist{\sigma}]}{\FSub[\singlist{\tau}]})} && {\cexp{\gluepsh{\sigma}}{\FSub[\singlist{\tau}]}}
+	\arrow["{\gluepred{\functy{\sigma}{\tau}}}"', from=1-1, to=2-1]
+	\arrow["{\expcmp[\singlist{\sigma},\singlist{\tau}]}"', from=2-1, to=2-2]
+	\arrow["k", from=1-1, to=1-4]
+	\arrow["{\cexp{\gluepsh{\sigma}}{\gluepred{\tau}}}", from=1-4, to=2-4]
+	\arrow["{\cexp{\gluepred{\sigma}}{\FSub[\singlist{\tau}]}}"', from=2-2, to=2-4]
+\end{tikzcd}
+\end{equation}
+\begin{items}
+    \item We define $\gunquote{\functy{\sigma}{\tau}} : \PNe{\functy{\sigma}{\tau}} \to \gluepsh{\functy{\sigma}{\tau}}$ using the universal property of the pullback square (\ref{diag:quote-unquote-pb}). For that, we need natural transformations $f : \PNe{\functy{\sigma}{\tau}} \to \FSub[\singlist{\functy{\sigma}{\tau}}]$ and $g : \PNe{\functy{\sigma}{\tau}} \to \cexp{\gluepsh{\sigma}}{\gluepsh{\tau}}$ such that the square
+    % https://q.uiver.app/#q=WzAsNSxbMCwxLCJcXEZTdWJbXFxzaW5nbGlzdHtcXGZ1bmN0eXtcXHNpZ21hfXtcXHRhdX19XSJdLFsxLDEsIihcXGNleHB7XFxGU3ViW1xcc2luZ2xpc3R7XFxzaWdtYX1dfXtcXEZTdWJbXFxzaW5nbGlzdHtcXHRhdX1dfSkiXSxbMywwLCJcXGNleHB7XFxnbHVlcHNoe1xcc2lnbWF9fXtcXGdsdWVwc2h7XFx0YXV9fSJdLFszLDEsIlxcY2V4cHtcXGdsdWVwc2h7XFxzaWdtYX19e1xcRlN1YltcXHNpbmdsaXN0e1xcdGF1fV19Il0sWzAsMCwiXFxQTmV7XFxmdW5jdHl7XFxzaWdtYX17XFx0YXV9fSJdLFswLDEsIlxcZXhwY21wW1xcc2luZ2xpc3R7XFxzaWdtYX0sXFxzaW5nbGlzdHtcXHRhdX1dIiwyXSxbMiwzLCJcXGNleHB7XFxnbHVlcHNoe1xcc2lnbWF9fXtcXGdsdWVwcmVke1xcdGF1fX0iXSxbMSwzLCJcXGNleHB7XFxnbHVlcHJlZHtcXHNpZ21hfX17XFxGU3ViW1xcc2luZ2xpc3R7XFx0YXV9XX0iLDJdLFs0LDAsImYiLDJdLFs0LDIsImciXV0=
+    \[\begin{tikzcd}
+    	{\PNe{\functy{\sigma}{\tau}}} &&& {\cexp{\gluepsh{\sigma}}{\gluepsh{\tau}}} \\
+    	{\FSub[\singlist{\functy{\sigma}{\tau}}]} & {(\cexp{\FSub[\singlist{\sigma}]}{\FSub[\singlist{\tau}]})} && {\cexp{\gluepsh{\sigma}}{\FSub[\singlist{\tau}]}}
+    	\arrow["{\expcmp[\singlist{\sigma},\singlist{\tau}]}"', from=2-1, to=2-2]
+    	\arrow["{\cexp{\gluepsh{\sigma}}{\gluepred{\tau}}}", from=1-4, to=2-4]
+    	\arrow["{\cexp{\gluepred{\sigma}}{\FSub[\singlist{\tau}]}}"', from=2-2, to=2-4]
+    	\arrow["f"', from=1-1, to=2-1]
+    	\arrow["g", from=1-1, to=1-4]
+    \end{tikzcd}\]
+    commutes. For $f$, we choose the morphism $\predneut{\functy{\sigma}{\tau}}$ that sends a neutral term $m \in \PNe{\functy{\sigma}{\tau}}(\Gamma)$ to $[\stmsub{m}] \in \Hom[\syncat]{\Gamma}{\singlist{\functy{\sigma}{\tau}}}$. For $g$, we take the exponential transpose of the composite
+    % https://q.uiver.app/#q=WzAsNCxbMCwwLCJcXGNwcm9ke1xcUE5le1xcZnVuY3R5e1xcc2lnbWF9e1xcdGF1fX19e1xcZ2x1ZXBzaHtcXHNpZ21hfX0iXSxbMiwwLCJcXGNwcm9ke1xcUE5le1xcZnVuY3R5e1xcc2lnbWF9e1xcdGF1fX19e1xcUE5me1xcc2lnbWF9fSJdLFszLDAsIlxcUE5le1xcdGF1fSJdLFs0LDAsIlxcZ2x1ZXBzaHtcXHRhdX0iXSxbMCwxLCJcXGNwcm9ke1xcaWR9e1xcZ3F1b3Rle1xcc2lnbWF9fSJdLFsxLDIsIlxcbmFwcHtcXHNpZ21hfXtcXHRhdX0iXSxbMiwzLCJcXGd1bnF1b3Rle1xcdGF1fSJdXQ==
+    \[\begin{tikzcd}
+    	{\cprod{\PNe{\functy{\sigma}{\tau}}}{\gluepsh{\sigma}}} && {\cprod{\PNe{\functy{\sigma}{\tau}}}{\PNf{\sigma}}} & {\PNe{\tau}} & {\gluepsh{\tau}}
+    	\arrow["{\cprod{\id}{\gquote{\sigma}}}", from=1-1, to=1-3]
+    	\arrow["{\napp{\sigma}{\tau}}", from=1-3, to=1-4]
+    	\arrow["{\gunquote{\tau}}", from=1-4, to=1-5]
+    \end{tikzcd}\]
+
+    \item We define $\gquote{\functy{\sigma}{\tau}} : \gluepsh{\functy{\sigma}{\tau}} \to \PNf{\functy{\sigma}{\tau}}$ as the composite
+    % https://q.uiver.app/#q=WzAsNCxbMCwwLCJcXGdsdWVwc2h7XFxmdW5jdHl7XFxzaWdtYX17XFx0YXV9fSJdLFsxLDAsIihcXGNleHB7XFxnbHVlcHNoe1xcc2lnbWF9fXtcXGdsdWVwc2h7XFx0YXV9fSkiXSxbMywwLCIoXFxjZXhwe1xcRlN1YltcXHNpbmdsaXN0e1xcc2lnbWF9XX17XFxQTmZ7XFx0YXV9fSkiXSxbNCwwLCJcXFBOZntcXGZ1bmN0eXtcXHNpZ21hfXtcXHRhdX19Il0sWzAsMSwiayJdLFsxLDIsIlxcY2V4cHtcXGd1bnF1b3Rle1xcc2lnbWF9XFxudmFye1xcc2lnbWF9fXtcXGdxdW90ZXtcXHRhdX19Il0sWzIsMywiXFxubGFte1xcc2lnbWF9e1xcdGF1fSJdXQ==
+    \[\begin{tikzcd}
+    	{\gluepsh{\functy{\sigma}{\tau}}} & {(\cexp{\gluepsh{\sigma}}{\gluepsh{\tau}})} && {(\cexp{\FSub[\singlist{\sigma}]}{\PNf{\tau}})} & {\PNf{\functy{\sigma}{\tau}}}
+    	\arrow["k", from=1-1, to=1-2]
+    	\arrow["{\cexp{\gunquote{\sigma}\nvar{\sigma}}{\gquote{\tau}}}", from=1-2, to=1-4]
+    	\arrow["{\nlam{\sigma}{\tau}}", from=1-4, to=1-5]
+    \end{tikzcd}\] \qedhere
+\end{items}
+\end{enum}
+\end{proof}
+\end{prop}
+
+\begin{comment}
+\begin{prop}
+For all types $\sigma \in \sTy$, the following diagram commutes:
+% https://q.uiver.app/#q=WzAsNCxbMSwwLCJcXGdsdWVwc2h7XFxzaWdtYX0iXSxbMiwwLCJcXFBOZntcXHNpZ21hfSJdLFswLDAsIlxcUE5le1xcc2lnbWF9Il0sWzEsMSwiXFxGU3ViW1xcc2luZ2xpc3R7XFxzaWdtYX1dIl0sWzIsMCwiXFxndW5xdW90ZXtcXHNpZ21hfSJdLFswLDEsIlxcZ3F1b3Rle1xcc2lnbWF9Il0sWzEsMywiXFxwcmVkbm9ybXtcXHNpZ21hfSJdLFsyLDMsIlxccHJlZG5ldXR7XFxzaWdtYX0iLDJdLFswLDMsIlxcZ2x1ZXByZWR7XFxzaWdtYX0iLDFdXQ==
+\[\begin{tikzcd}
+	{\PNe{\sigma}} & {\gluepsh{\sigma}} & {\PNf{\sigma}} \\
+	& {\FSub[\singlist{\sigma}]}
+	\arrow["{\gunquote{\sigma}}", from=1-1, to=1-2]
+	\arrow["{\gquote{\sigma}}", from=1-2, to=1-3]
+	\arrow["{\prednorm{\sigma}}", from=1-3, to=2-2]
+	\arrow["{\predneut{\sigma}}"', from=1-1, to=2-2]
+	\arrow["{\gluepred{\sigma}}"{description}, from=1-2, to=2-2]
+\end{tikzcd}\]
+\begin{proof}
+We follow the same construction as Fiore \cite[Figure 25]{fiore:2022:mscs}. Fiore constructs quote and unquote as maps in the gluing category, whereas we construct these maps in the presheaf category. However, since the second coordinate of the maps in the gluing category are identities \cite[Proposition 18]{fiore:2022:mscs}, we can reconstruct the desired maps in the gluing category from the maps that we constructed for presheaves.
+\end{proof}
+\end{prop}
+\end{comment}
+
+We now extend the unquote function to contexts. This is necessary to define the normalization function. Note that $\gluepsh{\sempcon} = \1$ and $\gluepsh{\sextcon{\Gamma}{\sigma}} = \cprod{\gluepsh{\Gamma}}{\gluepsh{\sigma}}$ by Corollary~\ref{cor:gluing-interpretation}.
+
+\begin{defn} \label{def:gluing-unquote-context}
+We define $\gunquote{\Gamma} : \PNe{\Gamma} \to \gluepsh{\Gamma}$ by recursion on the context $\Gamma$.
+\begin{align*}
+\gunquote{\sempcon}_\Delta(\sempsub[\Gamma])
+    &= \singel \\
+\gunquote{\sextcon{\Gamma}{\sigma}}_\Delta(\sextsub{\gamma}{t})
+    &= (\gunquote{\Gamma}_\Delta(\gamma), \gunquote{\sigma}_\Delta(t))
+\end{align*}
+\end{defn}
+
+\section{Normalization function}
+
+In this section, we construct the normalization function and prove its correctness.
+
+Recall from Corollary~\ref{cor:gluing-interpretation} that the interpretation $\cint[\glueint]{t}[\gluecat]$ of a term $\stypedtm{t}{\Gamma}{\sigma}$ in the category $\gluecat$ takes the form $(\gluemortm{t}, [\stmsub{t}])$ for some $\gluemortm{t} : \gluepsh{\Gamma} \to \gluepsh{\sigma}$.
+
+\begin{defn} \label{def:gluing-norm-fun}
+We define the normalization function $\gnorm{\Gamma}{\sigma} : \sTm{\Gamma}{\sigma} \to \sNf{\Gamma}{\sigma}$ as
+\[ \gnorm{\Gamma}{\sigma}(t) = \gquote{\sigma}_\Gamma(
+    \gluemortm{t}_\Gamma(\gunquote{\Gamma}_\Gamma(\sidsub[\Gamma]))). \]
+\end{defn}
+
+In essence, the definition of the normalization function has the same form as the one for normalization by evaluation in Section~\ref{sec:nbe-alg}.
+
+Diagrammatically, the normalization function is the composite
+% https://q.uiver.app/#q=WzAsNSxbMCwwLCJcXHNUbXtcXEdhbW1hfXtcXHNpZ21hfSJdLFsxLDAsIlxcSG9tW1xcZ2x1ZWNhdF17XFxjaW50W1xcZ2x1ZWludF17XFxHYW1tYX19e1xcY2ludFtcXGdsdWVpbnRde1xcc2lnbWF9fSJdLFsyLDAsIlxcSG9tW1xcUFNoe1xccENvbn1de1xcZ2x1ZXBzaHtcXEdhbW1hfX17XFxnbHVlcHNoe1xcc2lnbWF9fSJdLFszLDAsIlxcZ2x1ZXBzaHtcXHNpZ21hfShcXEdhbW1hKSJdLFs0LDAsIlxcc05me1xcR2FtbWF9e1xcc2lnbWF9Il0sWzAsMSwiXFxjaW50dG1bXFxnbHVlaW50XXstfSJdLFsxLDIsIlxcZ2x1ZWZzdCJdLFszLDQsIlxcZ3F1b3Rle1xcc2lnbWF9X1xcR2FtbWEiXSxbMiwzLCJcXHBoaSJdXQ==
+\[\begin{tikzcd}
+	{\sTm{\Gamma}{\sigma}} & {\Hom[\gluecat]{\cint[\glueint]{\Gamma}}{\cint[\glueint]{\sigma}}} & {\Hom[\PSh{\pCon}]{\gluepsh{\Gamma}}{\gluepsh{\sigma}}} & {\gluepsh{\sigma}(\Gamma)} & {\sNf{\Gamma}{\sigma}}
+	\arrow["{\cinttm[\glueint]{-}}", from=1-1, to=1-2]
+	\arrow["\gluefst", from=1-2, to=1-3]
+	\arrow["{\gquote{\sigma}_\Gamma}", from=1-4, to=1-5]
+	\arrow["\phi", from=1-3, to=1-4]
+\end{tikzcd}\]
+where $\phi$ is given by
+\[ \phi(\tilde{t}) = \tilde{t}_\Gamma(\gunquote{\Gamma}_\Gamma(\sidsub[\Gamma])). \]
+
+The correctness of the normalization function can be expressed via the following two propositions.
+
+\begin{prop}
+If $\sconvtm{t}{u}{\Gamma}{\sigma}$, then $\gnorm{\Gamma}{\sigma}(t) = \gnorm{\Gamma}{\sigma}(u)$.
+\begin{proof}
+Note that $\gnorm{\Gamma}{\sigma}(t)$ is defined in terms of the interpretation $\cint[\glueint]{t}[\gluecat]$. Hence, by the soundness of the interpretation (Theorem~\ref{thm:cat-soundness}), convertible terms have equal normal forms.
+\end{proof}
+\end{prop}
+
+\begin{prop}
+$\sconvtm{\gnorm{\Gamma}{\sigma}(t)}{t}{\Gamma}{\sigma}$.
+\begin{proof}
+This is Theorem 3.6 in \cite{sterling:2018:arxiv}.
+\end{proof}
+\end{prop}
+
+\begin{comment}
+\section{Using the internal language}
+
+We can simplify the construction of the normalization function using the internal language of the presheaf topos $\PSh{\rencat}$.
+\end{comment}
+
+\begin{comment}
+Further applications
+
+Gluing abstraction includes:
+\begin{items}
+    \item Classical (unary) logical predicates (source is classifying category, target is Set);
+    e.g. canonicity (gluing along global sections functor), existence/disjunction property
+    \item $n$-ary ogical relations (source is product of classifying categories, target is Set);
+    e.g. parametricity/free theorems?
+    \item Kripke logical relations (of varying arity) (target is presheaves over a poset/category);
+    e.g. normalization, definability, completeness
+    \item Beth/Grothendieck logical relations (target is sheaves over poset/category);
+    + sum types
+\end{items}
+Most useful if target is a locally cartesian closed category
+\end{comment}

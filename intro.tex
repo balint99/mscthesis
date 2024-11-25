@@ -1,0 +1,116 @@
+There are many different kinds of programming languages. One of the most basic ones is the (pure) simply typed $\lambda$-calculus, the basis for all typed functional languages. The simply typed $\lambda$-calculus sits in the intersection of logic and programming: via the Curry-Howard isomorphism, its type system corresponds to minimalistic logic, that is, logic with implication as the only connective.
+
+One of the main aspects of programming language theory is the study of the properties of programming languages as formal systems. This branch is also called the \textit{metatheory} of programming languages. There are several metatheoretic properties one can consider, such as decidable type checking, (strong) normalization, canonicity, and confluence. In some sense, the validity of these properties all contribute to the well-behavedness of a particular programming language.
+
+In this thesis, we are only concerned with the normalization property. Traditionally, normalization has been defined in the context of \textit{term rewriting}. One defines a collection of rewrite rules (also called \textit{reduction} rules) on the terms of a particular programming language, expressing how to simplify programs. In this setting, normalization refers to the process of applying the rewrite rules repeatedly until no more reductions are possible. A program in which no reductions are possible is called a \textit{normal form}.
+
+One proof of normalization for the simply typed $\lambda$-calculus is due to Tait \cite{tait:1967:jsl}. Historically, this proof is important as it crucially relies on the type structure of the simply typed $\lambda$-calculus, instead of only considering the shapes of terms and their behavior under reduction. His method uses a so called \textit{logical predicate}, which is a family of predicates on $\lambda$-terms indexed by types and defined by induction on types.
+
+Another important proof of normalization is due to Berger and Schwichtenberg \cite{DBLP:conf/lics/BergerS91}. They construct a \textit{normalization function} that computes the normal form of a given input term. An interesting aspect of their proof is that it is \textit{reduction-free}: it does not mention any notion of reduction and does not depend on term rewriting. Instead, it uses denotational semantics, that is, evaluation into a suitable model. This is why their method may be termed \textit{normalization by evaluation}. Berger and Schwichtenberg's algorithm, although somewhat technical, is easy to implement and provides an efficient solution to normalization.
+
+\begin{comment}
+One of the reasons for considering reduction-free normalization is the extensionality axiom
+\begin{mathpar}
+\inferrule[ext]
+    {\conv{\app{t}{x}}{\app{t'}{x}}{\tau}}
+    {\conv{t}{t'}{\functy{\sigma}{\tau}}}
+\end{mathpar}
+This axiom states that two functions are equal whenever their behaviors are the same, i.e. they give the same output for all inputs. The axiom is desirable since it allows us to reason about functions based on not only their definition but also their behavior.
+\end{comment}
+
+There have been multiple accounts of a categorical reconstruction of normalization by evaluation. The first one is due to Altenkirch, Hofmann, and Streicher \cite{altenkirch:1995:ctcs}. They employ a so-called \textit{twisted gluing} category from which both the normalization function and its correctness can be deduced. They note that normalization by evaluation is related to the categorical \textit{Artin-gluing} construction \cite{wraith:1974:jpaa} without making the relation explicit. The connection to categorical gluing has been made precise by Fiore \cite{fiore:2002:ppdp, fiore:2022:mscs}.
+
+In this thesis, we present three normalization proofs for the simply typed $\lambda$-calculus. The first one is based on Tait's idea of a \textit{convertible} term. The second one is a version of normalization by evaluation, similar to Reynolds' work \cite{reynolds1998normalization}. The third one is a categorical proof based on the work of Fiore \cite{fiore:2002:ppdp, fiore:2022:mscs} and Sterling and Spitters \cite{sterling:2018:arxiv}.
+
+Besides presenting the proofs, we provide a comparison of the structure of the proofs. Comparing the proofs adds to the understanding of the individual proofs themselves on their own. The main message of the thesis is that there are close analogies between the structure of all three proofs.
+
+\section{Related work}
+
+Normalization by evaluation was invented by Berger and Schwichtenberg \cite{DBLP:conf/lics/BergerS91}, who called their method `inverting the evaluation functional'. However, their coding mechanism for generating fresh variables is rather elaborate. A simpler numbering scheme was used in \cite{berger:1993:tlca} and \cite{dybjer:2002:appsem}.
+
+Berger \cite{berger:1993:tlca} showed that a version of normalization by evaluation can be extracted from a constructive proof of strong normalization, similar to the proof of weak normalization in this thesis. He used Kreisel's modified realizability interpretation for intuitionistic logic as the program extraction method. Later, he and others \cite{berger:2006:sl} formalized these results in various proof assistants.
+
+Dybjer and Filinski \cite{dybjer:2002:appsem} used normalization by evaluation for simply typed $\lambda$-calculus as the basis for type-directed partial evaluation.
+
+As mentioned already, there have been several attempts at reconstructing Berger and Schwichtenberg's algorithm using the language of category theory, such as \cite{altenkirch:1995:ctcs} and \cite{cubric:1998:mscs}. Streicher's short note \cite{streicher:1998:appsem} summarizes the situation.
+
+The method of normalization by evaluation has been extended to more complex systems. Altenkirch, Hofmann, and Streicher presented reduction-free categorical normalization proofs for a combinator version of System F \cite{altenkirch1996reduction} and then System F itself \cite{altenkirch1996systemf}. Altenkirch et al. \cite{DBLP:conf/lics/AltenkirchDHS01} considered simply typed $\lambda$-calculus with strong binary sums (categorical coproducts), while Altenkirch and Kaposi \cite{DBLP:conf/rta/AltenkirchK16} developed normalization by evaluation for dependent type theory. 
+
+Kovács \cite{kovacs:2017:msc} formalized normalization by evaluation for an intrinsically scoped and typed version of the simply typed $\lambda$-calculus in Agda.
+
+Fiore \cite{fiore:2002:ppdp} was the first to relate normalization by evaluation to categorical gluing. Sterling and Spitters \cite{sterling:2018:arxiv} prove normalization for free $\lambda$-theories generated from many-typed first-order signatures using categorical gluing.
+
+Kaposi et al. \cite{DBLP:conf/rta/KaposiHS19} transfer the categorical gluing method to type theory and develop gluing for categories with families. Coquand \cite{DBLP:journals/tcs/Coquand19} also proves canonicity and normalization for dependent type theory. His construction arises as a special case of the work of Kaposi et al. \cite{DBLP:conf/rta/KaposiHS19}.
+
+%\cite{plotkin:1980, statman:1985:ic, jung:1993:tlca, DBLP:conf/tlca/FioreS99}
+%\cite{DBLP:conf/popl/BalatCF04, coquand:1997:mscs, altenkirch:2009}
+
+\section{Overview}
+
+In Chapter~\ref{chap:stlc}, we discuss the syntax and semantics of the simply typed $\lambda$ calculus using a traditional syntactic presentation and model theory for the simply typed $\lambda$-calculus. Then, in Chapter~\ref{chap:norm-stlc}, we discuss the first two proofs of normalization for the simply typed $\lambda$-calculus. In these two chapters, we try to avoid any reference to category theory to make the methods more accessible.
+
+The goal of the following three chapters is to present the categorical proof of normalization. First, in Chapter~\ref{chap:cat-prelims}, we recall some basic definitions, constructions, and theorems from category theory. Then, in Chapter~\ref{chap:stlc-cat}, we discuss the syntax and semantics of the simply-typed lambda from a categorical perspective. Finally, in Chapter~\ref{chap:gluing}, we present the categorical proof in detail.
+
+\section{Acknowledgements}
+
+I thank Niels van der Weide for his guidance throughout the creation of this work. I also thank Márk Széles for his help in writing.
+
+\begin{comment}
+\begin{itemize}
+    \item Bigger picture regarding research, how is it related to other stuff in computer science, how it fits in the field
+    \begin{itemize}
+        \item We are interested in all kinds of programming languages. One of the most basic ones is STLC. Intersection of logic and programming. Type system is representative of minimalistic logic. Shares features with programming languages. Notions of program, reduction. The programs can be normalized to get a result. In order to have a suitable language, we also need to incorporate several aspects in the metatheory. We need decidable type checking, (strong) normalization, canonicity, confluence, etc. Expand on normalization: Something about reduction/rewriting and normal forms in the context of reduction/rewriting. Normalization can then be implemented as repeated rewriting.
+    \end{itemize}
+    \item History of normalization proofs
+    \begin{itemize}
+        \item Historical of normalization proofs: Tait's proof
+        \item new paragraph: Berger and Schwichtenberg (NbE) - say something about reduction-freeness
+        \item Motivation for reduction-free normalization:
+        \begin{itemize}
+            \item More efficient implementation of a normalizer
+            \item One advantage of using reduction-free normalization is that we can use extensionality. The extensionality rule says that that terms are equal whenever they have the same behavior. This rule allows us reason about programs by observing their behavior. For this reason, we consider convertibility instead of reduction.
+            \item The reason we consider the eta rule is that it is equivalent to extensionality, which allows us to reason about programs based on their behavior.
+        \end{itemize}
+        \item AHS'95: first categorical reconstruction of NbE using an ad-hoc twisted gluing category, but they observe already that there are connections to categorical gluing
+        \item Fiore'02: relates normalization by evaluation explicitly to categorical gluing.
+    \end{itemize}
+    \item What did I do in my thesis
+    \begin{itemize}
+        \item I present 3 normalization proofs. The first is based on Tait's idea of a convertible term. The second is a version of normalization by evaluation. The third one is a categorical proof based on Fiore's work.
+        \item I also compare the structure of the proofs.
+        \item Comparing the proofs adds to the understanding of the proofs themselves on their own.
+    \end{itemize}
+    \item Related work
+    \begin{itemize}
+        \item logical relations
+        \item normalization by evaluation
+        \item categorical gluing: applications of gluing: mention a bunch of papers that use gluing
+    \end{itemize}
+    \item Overview of the work
+    \begin{itemize}
+        \item In chapter ..., we do ...
+    \end{itemize}
+\end{itemize}
+\end{comment}
+
+\begin{comment}
+Thoughts:
+\begin{itemize}
+\item Aim: present very simple proof first, then build towards more and more conceptual proofs
+\item Provide historical context for the gluing method, and relate parts of gluing proof to Tait/NbE
+\item gluing gained traction via considering more complex theories for which the syntactic methods (NbE) were really complicated
+\item "The connection between normalization by evaluation, logical predicates and
+semantic gluing constructions is a matter of folklore, worked out in varying degrees
+within the literature." (Sterling, Spitters 2018)
+\item History
+\begin{itemize}
+ \item AHS'95, SystemF: 1996
+ \item lots of work on syntactic side
+ \item Fiore: 2002
+\end{itemize}
+\end{itemize}
+
+Acknowledgements
+- Niels for helpful discussions etc.
+- Márk and Herman for proofreading and feedback?
+\end{comment}

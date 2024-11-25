@@ -1,0 +1,40 @@
+\documentclass{article}
+\usepackage[left=3cm, right=3cm, top=3cm, bottom=3cm]{geometry}
+
+\title{Master's thesis project plan}
+\author{Bálint Kocsis}
+\date{}
+
+\parindent = 0.7\parindent
+
+\begin{document}
+
+\maketitle
+
+\section*{Basic information}
+
+\begin{itemize}
+\parskip = 0pt
+\item \textbf{Study programme}: Computing Science
+\item \textbf{Start date}: February 1, 2023
+\item \textbf{Expected end date}: February 15, 2024
+\item \textbf{Supervisor}: Niels van der Weide
+\item \textbf{Preliminary project title}: Normalization for simply typed $\lambda$-calculus
+\end{itemize}
+
+\section*{Project description}
+
+Normalization is an important metatheoretic property of type systems and programming languages. It states that all (or some well-defined subset of) terms can be reduced to an equivalent term in some canonical form, called \textit{normal form}. Normalization can be used, for instance, to decide convertibility of terms in a type system, or equivalence of programs in a programming language.
+
+Traditionally, both the notion of normal form and the normalization process itself have been defined using a notion of \textit{reduction} in the mathematical framework of \textit{term rewrite systems}. Using this approach, the normal form of a term/program is reached by applying a set of rewrite rules repeatedly until no more rewrites are possible. The resulting term is then the normal form of the original term. However, it is also possible to define normal forms and the normalization property without any reduction relation and only referring to the \textit{convertibility} (type theoretically: \textit{definitional equality}) relation of the system. This allows us to employ denotational methods to prove normalization.
+
+In this thesis, I will study and compare various normalization proofs for simply typed $\lambda$-calculus. Ultimately, my goal is to understand how the tools of category theory can be applied to the problem of normalization.
+
+As a first step, I will familiarize myself with the existing literature on reduction-free normalization (e.g. \cite{DBLP:conf/lics/BergerS91, altenkirch:1995:ctcs, cubric:1998:mscs, fiore:2002:ppdp, sterling:2018:arxiv}) to get an overview of the topic and to understand the underlying essential principles that go into a normalization proof. Specifically, I plan to dive deeper into the topics of \textit{logical relations}, \textit{normalization by evaluation}, and \textit{categorical gluing}. I plan to complete this step in around 4 months.
+
+Next, I will summarize my knowledge by presenting and comparing different kinds of normalization proofs for the simply typed $\lambda$-calculus in detail. Optionally, I will explore further applications of the categorical gluing method to other metatheoretic properties of type systems, such as canonicity or parametricity. This step should take around 8 months.
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

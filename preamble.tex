@@ -1,0 +1,351 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Packages
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{comment}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{fdsymbol}
+\usepackage{mathrsfs}
+\usepackage{quiver}
+\usepackage{mathpartir}
+\usepackage{xparse}
+\usepackage{hyperref}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Global settings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\parindent = 0.7\parindent
+\parskip = 0pt
+
+\tikzcdset{row sep/normal = 2.7em, column sep/normal = 2.7em}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Mathematical environments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}[section]
+\newtheorem{ex}[defn]{Example}
+\newtheorem{notn}[defn]{Notation}
+\newtheorem{con}[defn]{Construction}
+
+\theoremstyle{plain}
+\newtheorem{thm}[defn]{Theorem}
+\newtheorem{prop}[defn]{Proposition}
+\newtheorem{lem}[defn]{Lemma}
+\newtheorem{cor}[defn]{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{rem}[defn]{Remark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Formatting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\name}{\mathrm}
+\renewcommand{\emph}{\textbf}
+\newcommand{\sep}{\ |\ }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Abbreviations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\subs}{\subseteq}
+\newcommand{\sups}{\supseteq}
+\newcommand{\ul}{\underline}
+\newcommand{\To}{\Rightarrow}
+\newcommand{\xto}[2][]{\xrightarrow[#1]{#2}}
+\newcommand{\xfrom}[2][]{\xleftarrow[#1]{#2}}
+\renewcommand{\phi}{\varphi}
+\renewcommand{\epsilon}{\varepsilon}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Brackets
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\ang}[1]{\langle #1 \rangle}
+\newcommand{\sem}[1]{\lsem #1 \rsem}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Sets & logic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\implies}{\To}
+\renewcommand{\iff}{\Leftrightarrow}
+
+\newcommand{\nul}{\emptyset}
+\newcommand{\singel}{*}
+\newcommand{\singset}[1][\singel]{\{#1\}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\setof}[2]{\left\{ #1 \sep #2 \right\}}
+\newcommand{\cartprod}[2]{#1 \times #2}
+\newcommand{\funcset}[2]{#2^{#1}}
+\newcommand{\powset}[1]{\mathcal{P}(#1)}
+\newcommand{\finpowset}[1]{\mathcal{P}_{\mathrm{fin}}(#1)}
+
+\newcommand{\pto}{\rightharpoonup}
+\newcommand{\dom}[1]{\mathrm{dom}(#1)}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Basic category theory
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\cat}[1]{\mathcal{#1}}
+\newcommand{\Ob}[1]{\mathrm{Ob}(#1)}
+\newcommand{\Hom}[3][\mathrm{Hom}]{#1(#2, #3)}
+\NewDocumentCommand{\id}{o}{1\IfValueT{#1}{_{#1}}}
+\NewDocumentCommand{\idfunc}{o}{\name{Id}\IfValueT{#1}{_{#1}}}
+\NewDocumentCommand{\inv}{s m}{\IfBooleanTF{#1}{(#2)^{-1}}{#2^{-1}}}
+
+\newcommand{\Set}{\mathbf{Set}}
+\newcommand{\Cat}{\mathbf{Cat}}
+\newcommand{\op}[1]{#1^\mathrm{op}}
+\newcommand{\prodcat}[2]{#1 \times #2}
+\newcommand{\funccat}[2]{[#1, #2]}
+\newcommand{\PSh}[1]{\name{PSh}(#1)}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Lambda calculus with variable names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\Basetypes}{\Sigma}
+\newcommand{\functy}[2]{#1 \to #2}
+\newcommand{\Ty}{\mathrm{Ty}}
+
+\newcommand{\Var}[1][]{V_{#1}}
+\newcommand{\app}[2]{#1 \cdot #2}
+\newcommand{\lamv}[3]{\lambda #1^{#2}\hspace{-1pt}.\;#3}
+\newcommand{\Tm}[1][]{\Lambda_{#1}}
+\newcommand{\typedvar}[2]{#1 : #2}
+\newcommand{\typedtm}[2]{#1 : #2}
+
+\newcommand{\FV}[2][]{\mathrm{FV}_{#1}(#2)}
+\newcommand{\BV}[1]{\mathrm{BV}(#1)}
+
+\newcommand{\Sub}{\mathrm{Sub}}
+\newcommand{\varsubst}[2]{#1 := #2}
+\newcommand{\singsubv}[2]{[\varsubst{#1}{#2}]}
+\NewDocumentCommand{\substnf}{m m m}
+    {[\varsubst{#1_1}{#2_1}, \ldots, \varsubst{#1_{#3}}{#2_{#3}}]}
+\newcommand{\updsub}[3]{#1[\varsubst{#2}{#3}]}
+\newcommand{\idsub}[1][]{\mathrm{id}_{#1}}
+\newcommand{\subst}[2]{#1 #2}
+
+\newcommand{\convrel}[1]{{=}_{#1}}
+\newcommand{\conv}[3]{\vdash #1 = #2 : #3}
+
+\NewDocumentCommand{\Ne}{o}{\mathrm{Ne}\IfValueT{#1}{_{#1}}}
+\NewDocumentCommand{\Nf}{o}{\mathrm{Nf}\IfValueT{#1}{_{#1}}}
+
+\newcommand{\Con}{\mathrm{Con}}
+\newcommand{\cTm}[2]{\Lambda_{#2}(#1)}
+\newcommand{\cNf}[2]{\mathrm{Nf}_{#2}(#1)}
+\newcommand{\cNe}[2]{\mathrm{Ne}_{#2}(#1)}
+\newcommand{\ctypedtm}[3]{#1 \vdash #2 : #3}
+\newcommand{\ctypedconv}[4]{#1 \vdash #2 = #3 : #4}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Henkin models
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\struct}[1]{\mathcal{#1}}
+\newcommand{\scomp}[2]{#1_{#2}}
+\NewDocumentCommand{\sapp}{O{} O{}}{\mathrm{app}^{#2}_{#1}}
+
+\NewDocumentCommand{\Env}{O{} O{}}{\mathrm{Env}^{#2}_{#1}}
+\newcommand{\typedenv}[2]{#1 \vDash #2}
+\newcommand{\updenv}[3]{#1[#2 := #3]}
+\newcommand{\empenv}{\nul}
+\newcommand{\sint}[3][]{\sem{#2}^{#1}_{#3}}
+
+\newcommand{\stdmod}[1]{\struct{S}(#1)}
+\newcommand{\tmmod}{\struct{L}}
+\newcommand{\sintsub}[2]{\sint{#1}{#2}}
+\newcommand{\modsat}[4]{#1 \vDash #2 = #3 : #4}
+
+\newcommand{\mapenv}[2]{#1 #2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Kripke models
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\kscomp}[3]{#1_{#2}^{#3}}
+\NewDocumentCommand{\kstran}{O{} O{}}{\mathrm{i}_{#1}^{#2}}
+\NewDocumentCommand{\ksapp}{O{} O{}}{\mathrm{app}_{#1}^{#2}}
+
+\newcommand{\ctypedenv}[3]{#1 \vDash #2 \sep #3}
+\newcommand{\kupdenv}[3]{#1[#2 := #3]}
+\newcommand{\ksint}[3]{\sem{#1}^{#3}_{#2}}
+
+\newcommand{\kstdmod}[2]{\struct{S}(#1, #2)}
+\newcommand{\cmodsat}[5]{#1 \vDash #2 \vdash #3 = #4 : #5}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NbE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\normf}[2]{\name{nf}^{#1}_{#2}}
+\newcommand{\fresh}[2]{v_{#1,#2}}
+\newcommand{\extfresh}[2]{#1^{+#2}}
+\newcommand{\unquotef}[2]{\name{u}^{#1}_{#2}}
+\newcommand{\quotef}[2]{\name{q}^{#1}_{#2}}
+\newcommand{\idenv}[1]{\eta_{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Categorical preliminaries
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\1}[1][]{\mathbf{1}_{#1}}
+\newcommand{\0}[1][]{\mathbf{0}_{#1}}
+\NewDocumentCommand{\mterm}{o}{{!}\IfValueT{#1}{_{#1}}}
+\NewDocumentCommand{\minit}{o}{{!}\IfValueT{#1}{_{#1}}}
+\newcommand{\cprod}[2]{#1 \times #2}
+\NewDocumentCommand{\mfst}{o}{\name{fst}\IfValueT{#1}{_{#1}}}
+\NewDocumentCommand{\msnd}{o}{\name{snd}\IfValueT{#1}{_{#1}}}
+\newcommand{\mpair}[2]{\ang{#1, #2}}
+\newcommand{\cexp}[2]{#1 \To #2}
+\newcommand{\mev}[1][]{\name{ev}_{#1}}
+\newcommand{\mcurry}[1]{\lambda(#1)}
+
+\newcommand{\CCC}{\mathbf{CCC}}
+
+\NewDocumentCommand{\prodcmp}{o o}{s\IfValueT{#1}{_{#1}}\IfValueT{#2}{^{#2}}}
+\NewDocumentCommand{\expcmp}{o o}{t\IfValueT{#1}{_{#1}}\IfValueT{#2}{^{#2}}}
+
+\newcommand{\y}{y}
+\newcommand{\yap}[1]{\y_{#1}}
+\newcommand{\reind}[1]{#1^*}
+
+\newcommand{\comma}[2]{#1 \mathbin{\hspace{-1pt}\downarrow} #2}
+\newcommand{\commafst}[2]{P_{#1, #2}}
+\newcommand{\commasnd}[2]{Q_{#1, #2}}
+\newcommand{\commatrd}[2]{\theta_{#1, #2}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Well-scoped, well-typed lambda calculus
+% with explicit substitutions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\sTy}{\Ty}
+\newcommand{\sCon}{\mathrm{Con}}
+\newcommand{\sempcon}{{[]}}
+\newcommand{\sextcon}[2]{#1, #2}
+
+\newcommand{\sTm}[2]{\mathrm{Tm}(#1; #2)}
+\newcommand{\sSub}[2]{\mathrm{Sub}(#1; #2)}
+\newcommand{\stypedtm}[3]{#2 \vdash #1 : #3}
+\newcommand{\stypedsub}[3]{#2 \vdash #1 : #3}
+
+\NewDocumentCommand{\vz}{o o}{\mathrm{v}\IfValueT{#1}{^{#1}}\IfValueT{#2}{_{#2}}}
+\newcommand{\slam}[2]{\lambda^{#1}.\;#2}
+\newcommand{\ssubst}[2]{#1 #2}
+
+\newcommand{\sempsub}[1][]{{()}_{#1}}
+\newcommand{\sextsub}[2]{(#1, #2)}
+\NewDocumentCommand{\sidsub}{o}{\name{id}\IfValueT{#1}{_{#1}}}
+\newcommand{\scompsub}[2]{#1 \circ #2}
+\NewDocumentCommand{\spsub}{o o}{\name{p}\IfValueT{#1}{^{#1}}\IfValueT{#2}{_{#2}}}
+
+\newcommand{\sVar}[2]{\mathrm{Var}(#1; #2)}
+
+\newcommand{\stmsub}[1]{#1^\bullet}
+\newcommand{\ssingsub}[1]{\ang{#1}}
+\NewDocumentCommand{\sliftsub}{o m}{#2\IfValueT{#1}{^{#1}}}
+
+\newcommand{\sconvreltm}[2]{{=}_{#1,#2}^\mathrm{Tm}}
+\newcommand{\sconvrelsub}[2]{{=}_{#1,#2}^\mathrm{Sub}}
+\newcommand{\sconvtm}[4]{#3 \vdash #1 = #2 : #4}
+\newcommand{\sconvsub}[4]{#3 \vdash #1 = #2 : #4}
+
+\newcommand{\sNe}[2]{\mathrm{Ne}(#1; #2)}
+\newcommand{\sNf}[2]{\mathrm{Nf}(#1; #2)}
+\newcommand{\stypedvar}[3]{#2 \vdash^{\mathrm{v}} #1 : #3}
+\newcommand{\stypedne}[3]{#2 \vdash^{\mathrm{ne}} #1 : #3}
+\newcommand{\stypednf}[3]{#2 \vdash^{\mathrm{nf}} #1 : #3}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Scwfs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NewDocumentCommand{\SCon}{o}{\mathrm{Con}\IfValueT{#1}{^{#1}}}
+\NewDocumentCommand{\STy}{o}{\mathrm{Ty}\IfValueT{#1}{^{#1}}}
+\NewDocumentCommand{\Sempcon}{o}{\bullet\IfValueT{#1}{^{#1}}}
+\NewDocumentCommand{\Sextcon}{m m o}{#1 \cdot\IfValueT{#3}{^{#3}} #2}
+
+\NewDocumentCommand{\STm}{o m o}
+    {\IfValueTF{#1}
+        {\mathrm{Tm}\IfValueT{#3}{^{#3}}(#1; #2)}
+        {\mathrm{Tm}\IfValueT{#3}{^{#3}}_{#2}}}
+\NewDocumentCommand{\SSub}{m m o}
+    {\mathrm{Sub}\IfValueT{#3}{^{#3}}(#1; #2)}
+
+\NewDocumentCommand{\Sq}{o o}{\mathrm{q}\IfValueT{#1}{^{#1}}\IfValueT{#2}{_{#2}}}
+\newcommand{\Ssubst}[2]{#1[#2]}
+
+\NewDocumentCommand{\Sempsub}{o o}{\etaa\IfValueT{#1}{_{#1}}\IfValueT{#2}{^{#2}}}
+    \newcommand{\etaa}{\eta}
+\NewDocumentCommand{\Sextsub}{m m o}{#1 .\IfValueT{#3}{^{#3}} #2}
+\NewDocumentCommand{\Sidsub}{o o}{\name{id}\IfValueT{#1}{_{#1}}\IfValueT{#2}{^{#2}}}
+\NewDocumentCommand{\Scompsub}{m m o}{#1 \circ\IfValueT{#3}{^{#3}} #2}
+\NewDocumentCommand{\Spsub}{o o}{\name{p}\IfValueT{#1}{^{#1}}\IfValueT{#2}{_{#2}}}
+
+\newcommand{\Stmsub}[1]{#1^\bullet}
+\newcommand{\Ssingsub}[1]{\ang{#1}}
+\NewDocumentCommand{\Sliftsub}{o m}{#2\IfValueT{#1}{^{#1}}}
+
+\NewDocumentCommand{\Sfuncty}{m m o}{#1 \To\IfValueT{#3}{^{#3}} #2}
+\NewDocumentCommand{\Sapp}{o m m o}
+    {#2 \mathbin{\$\IfValueT{#1}{_{#1}}\IfValueT{#4}{^{#4}}} #3}
+\NewDocumentCommand{\Slam}{m o m}{\lambdaa^{#1}\IfValueT{#2}{_{#2}}(#3)}
+    \newcommand{\lambdaa}{\lambda}
+
+\NewDocumentCommand{\scwfmorcon}{s m}{#2\IfBooleanT{#1}{^\name{Con}}}
+\NewDocumentCommand{\scwfmorsub}{s m m m}
+    {#2\IfBooleanT{#1}{^\name{Sub}}_{#3,#4}}
+\NewDocumentCommand{\scwfmorty}{s m}{#2\IfBooleanT{#1}{^\name{Ty}}}
+\NewDocumentCommand{\scwfmortm}{s m o m}
+        {#2\IfBooleanT{#1}{^\name{Tm}}_{\IfValueTF{#3}{#3,#4}{#4}}}
+
+\newcommand{\Ldom}{\lambda\mathrm{-}\mathbf{Dom}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Interpretation, abstract syntax
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\NewDocumentCommand{\cint}{o m o}{\sem{#2}\IfValueT{#1}{_{#1}}\IfValueT{#3}{^{#3}}}
+\NewDocumentCommand{\cintty}{o m}{\cint[#1]{#2}[\mathrm{Ty}]}
+\NewDocumentCommand{\cintcon}{o m}{\cint[#1]{#2}[\mathrm{Con}]}
+\NewDocumentCommand{\cinttm}{o m}{\cint[#1]{#2}[\mathrm{Tm}]}
+\NewDocumentCommand{\cintsub}{o m}{\cint[#1]{#2}[\mathrm{Sub}]}
+
+\newcommand{\syncat}{\cat{L}}
+\newcommand{\canint}{I}
+\newcommand{\Mod}{\mathbf{Mod}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Gluing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\pCon}{\sCon}
+\newcommand{\inclcon}{i}
+\NewDocumentCommand{\FSub}{o}{\mathrm{Sub}\IfValueT{#1}{_{#1}}}
+\newcommand{\PNe}[1]{\mathrm{Ne}_{#1}}
+\newcommand{\PNf}[1]{\mathrm{Nf}_{#1}}
+\newcommand{\gluecat}{\cat{G}}
+\newcommand{\gluefst}{\pi_1}
+\newcommand{\gluesnd}{\pi_2}
+\NewDocumentCommand{\glueint}{o}{\rhoo\IfValueT{#1}{_{#1}}}
+    \newcommand{\rhoo}{\rho}
+\newcommand{\gluevar}[1]{\nu_{#1}}
+\newcommand{\glueneut}[1]{\mu_{#1}}
+\newcommand{\predneut}[1]{m_{#1}}
+\newcommand{\gluenorm}[1]{\eta_{#1}}
+\newcommand{\prednorm}[1]{n_{#1}}
+\newcommand{\gluepsh}[1]{R_{#1}}
+\newcommand{\gluepred}[1]{r_{#1}}
+\newcommand{\gluemortm}[1]{\tilde{#1}}
+\newcommand{\gluemorsub}[1]{\tilde{#1}}
+\newcommand{\gquote}[1]{\mathrm{q}^{#1}}
+\newcommand{\gunquote}[1]{\mathrm{u}^{#1}}
+\newcommand{\nvar}[1]{\mathrm{var}_{#1}}
+\newcommand{\napp}[2]{\mathrm{app}_{#1,#2}}
+\newcommand{\nlam}[2]{\mathrm{lam}_{#1,#2}}
+\newcommand{\gnorm}[2]{\name{nf}^{#1}_{#2}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Uncategorized
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\convset}[1]{C(#1)}
+\newcommand{\substruct}{\subs}
+\newcommand{\upset}[1]{\uparrow\hspace{-2pt}(#1)}
+\newcommand{\singlist}[1]{{[#1]}}
+\newcommand{\concat}[2]{#1, #2}

@@ -1,0 +1,49 @@
+\documentclass{report}
+%TODO preliminary title
+\title{Normalization for simply typed $\lambda$-calculus: a trilogy}
+\author{Bálint Kocsis}
+\date{\today}
+
+\usepackage[a4paper, left = 3cm, right = 3cm, top = 3cm, bottom = 3cm]{geometry}
+\usepackage{enumitem}
+
+\newlist{enum}{enumerate}{1}
+\setlist[enum]{label = (\roman*), noitemsep, listparindent = \parindent}
+\newlist{items}{itemize}{3}
+\setlist[items]{label = $-$, noitemsep, listparindent = \parindent}
+
+\input{preamble.tex}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+%\nocite{*}
+
+\chapter{Introduction} \label{chap:intro}
+\input{intro}
+
+\chapter{Syntax and semantics of the simply typed \texorpdfstring{$\lambda$}{lambda}-calculus} \label{chap:stlc}
+\input{stlc}
+
+\chapter{Normalization for the simply typed \texorpdfstring{$\lambda$}{lambda}-calculus} \label{chap:norm-stlc}
+\input{norm-stlc}
+
+\chapter{Categorical preliminaries} \label{chap:cat-prelims}
+\input{cat-prelims}
+
+\chapter{Categorical semantics for the simply typed \texorpdfstring{$\lambda$}{lambda}-calculus} \label{chap:stlc-cat}
+\input{stlc-cat}
+
+\chapter{Gluing} \label{chap:gluing}
+\input{gluing}
+
+\chapter{Conclusion}
+\input{conclusion}
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}
